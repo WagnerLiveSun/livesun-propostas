@@ -61,7 +61,10 @@ def render_pdf_html(proposal):
 
 def generate_pdf(proposal):
     browser = find_browser()
-    if has_request_context():
+    if isinstance(proposal, str):
+        # HTML já preparado; permite liberar a conexão antes de iniciar o navegador.
+        html = proposal
+    elif has_request_context():
         html = render_pdf_html(proposal)
     else:
         with current_app.test_request_context('/'):

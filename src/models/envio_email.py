@@ -15,7 +15,7 @@ class EnvioEmail(db.Model):
     destinatario = db.Column(db.String(120), nullable=False)
     assunto = db.Column(db.String(255))
     mensagem = db.Column(db.Text)
-    status = db.Column(db.String(20), default='enviado')  # 'enviado', 'falha'
+    status = db.Column(db.String(20), default='enviado')  # 'processando', 'enviado', 'falha'
     data_envio = db.Column(db.DateTime, default=_utcnow)
 
     def __repr__(self):

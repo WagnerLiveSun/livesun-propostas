@@ -7,7 +7,9 @@ from src.extensions import db
 from src.core.security import roles_required, owned, audit
 from src.models import Proposta, PropostaItem, Cliente, ProdutoServico, EnvioEmail, Auditoria
 from src.services.propostas import fill_proposal, new_proposal, save_customer, STATUSES
-from src.services.pdf import generate_pdf, PDFGenerationError
+from src.services.pdf import generate_pdf, render_pdf_html, PDFGenerationError
+from src.services.envios import finish_delivery
+from sqlalchemy.exc import SQLAlchemyError
 from src.services.brevo import brevo_service
 
 propostas_bp = Blueprint('propostas', __name__, url_prefix='/propostas')
@@ -161,15 +163,30 @@ def enviar(identifier):
     if proposal.empresa.logo:
         token = URLSafeSerializer(current_app.secret_key, salt='marca-email').dumps(proposal.empresa.logo)
         logo_url = current_app.config['PUBLIC_BASE_URL'] + url_for('gestao.marca_email', token=token)
-    successful = brevo_service.send_transactional_email(recipient, proposal.cliente_nome, subject,
-                    render_template('email/proposta.html', p=proposal, mensagem=message, logo_url=logo_url),
-                    attachment={'name': f'proposta-{proposal.numero}.pdf', 'content': generate_pdf(proposal)})
-    db.session.add(EnvioEmail(empresa_id=current_user.empresa_id, proposta_id=proposal.id,
-                             destinatario=recipient, assunto=subject, mensagem=message,
-                             status='enviado' if successful else 'falha'))
-    if successful and proposal.status in ('rascunho', 'pendente'):
-        proposal.status = 'enviada'
-    audit('enviar_proposta' if successful else 'falha_envio_proposta', 'proposta', proposal.id)
-    db.session.commit()
-    flash('E-mail enviado.' if successful else 'Envio não concluído. Verifique a configuração exclusiva do Brevo.', 'success' if successful else 'danger')
+    company_id, user_id = current_user.empresa_id, current_user.id
+    customer_name, number = proposal.cliente_nome, proposal.numero
+    email_html = render_template('email/proposta.html', p=proposal, mensagem=message, logo_url=logo_url)
+    pdf_html = render_pdf_html(proposal)
+    # Não manter uma transação remota ociosa durante Chromium ou API externa.
+    db.session.rollback()
+    attachment = generate_pdf(pdf_html)
+    try:
+        delivery = EnvioEmail(empresa_id=company_id, proposta_id=identifier, destinatario=recipient,
+                             assunto=subject, mensagem=message, status='processando')
+        db.session.add(delivery)
+        db.session.flush()
+        delivery_id = delivery.id
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        flash('Não foi possível registrar a tentativa no banco. Nenhum e-mail foi enviado.', 'danger')
+        return redirect(url_for('propostas.detalhe', identifier=identifier))
+    successful = brevo_service.send_transactional_email(recipient, customer_name, subject, email_html,
+                    attachment={'name': f'proposta-{number}.pdf', 'content': attachment})
+    saved = finish_delivery(delivery_id, company_id, user_id, successful)
+    if not saved:
+        flash('O Brevo aceitou o e-mail, mas o histórico não pôde ser atualizado. Não reenvie sem conferir o destinatário.'
+              if successful else 'O envio falhou e o histórico não pôde ser atualizado. Verifique a conexão com o banco.', 'warning')
+    else:
+        flash('E-mail enviado.' if successful else 'Envio não concluído. Verifique a configuração exclusiva do Brevo.', 'success' if successful else 'danger')
     return redirect(url_for('propostas.detalhe', identifier=identifier))
