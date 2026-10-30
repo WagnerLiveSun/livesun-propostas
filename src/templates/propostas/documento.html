@@ -1,5 +1,5 @@
 <article class="document">
-{% if p.empresa.logo %}<img src="{{ proposal_logo_url if proposal_logo_url is defined else url_for('gestao.logo') }}" class="company-logo" alt="Logo da empresa">{% endif %}
+{% if p.empresa.logo and (proposal_logo_url is not defined or proposal_logo_url) %}<img src="{{ proposal_logo_url if proposal_logo_url is defined else url_for('gestao.logo') }}" class="company-logo" alt="Logo da empresa">{% endif %}
 <h2>{{ p.empresa.nome }}</h2><div>{{ p.empresa.razao_social or '' }}</div><div>{{ p.empresa.cnpj_cpf|documento }}</div><div>{{ p.empresa.endereco or '' }}</div><div>{{ p.empresa.telefone or '' }} · {{ p.empresa.email or '' }}</div><hr>
 <h1 class="h3">Proposta comercial / Orçamento</h1><p><strong>Nº {{ p.numero }}</strong> · Emissão: {{ p.data_emissao.strftime('%d/%m/%Y') }} · Validade: {{ p.validade.strftime('%d/%m/%Y') if p.validade else '-' }}</p>
 <h3 class="h5">{{ p.cliente_nome or 'Cliente não informado' }}</h3><div>Telefone: {{ p.cliente_telefone }} · CPF / CNPJ: {{ p.cliente_cnpj_cpf|documento }}</div><div>E-mail: {{ p.cliente_email or '-' }} · Contato: {{ p.cliente_contato or '-' }}</div><div>{{ p.cliente_endereco or '' }}</div>

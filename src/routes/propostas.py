@@ -7,7 +7,7 @@ from src.extensions import db
 from src.core.security import roles_required, owned, audit
 from src.models import Proposta, PropostaItem, Cliente, ProdutoServico, EnvioEmail, Auditoria
 from src.services.propostas import fill_proposal, new_proposal, save_customer, STATUSES
-from src.services.pdf import generate_pdf, render_pdf_html, PDFGenerationError
+from src.services.pdf import generate_pdf, render_pdf_html, company_logo_path, PDFGenerationError
 from src.services.envios import finish_delivery
 from sqlalchemy.exc import SQLAlchemyError
 from src.services.brevo import brevo_service
@@ -160,13 +160,19 @@ def enviar(identifier):
     if not subject or len(subject) > 255 or len(recipient) > 120 or not proposal.cliente_nome or not proposal.cliente_telefone:
         abort(400, 'Preencha cliente, destinatário e assunto válidos.')
     logo_url = None
-    if proposal.empresa.logo:
+    missing_logo = False
+    if company_logo_path(proposal.empresa):
         token = URLSafeSerializer(current_app.secret_key, salt='marca-email').dumps(proposal.empresa.logo)
         logo_url = current_app.config['PUBLIC_BASE_URL'] + url_for('gestao.marca_email', token=token)
+    elif proposal.empresa.logo:
+        missing_logo = True
     company_id, user_id = current_user.empresa_id, current_user.id
     customer_name, number = proposal.cliente_nome, proposal.numero
     email_html = render_template('email/proposta.html', p=proposal, mensagem=message, logo_url=logo_url)
     pdf_html = render_pdf_html(proposal)
+    if missing_logo:
+        flash('O arquivo do logo não está disponível no servidor. A proposta será enviada sem logo; '
+              'acesse Empresa e envie a imagem novamente para os próximos envios.', 'warning')
     # Não manter uma transação remota ociosa durante Chromium ou API externa.
     db.session.rollback()
     attachment = generate_pdf(pdf_html)

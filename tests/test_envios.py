@@ -3,7 +3,7 @@ from sqlalchemy.exc import OperationalError
 import unittest
 import test_app
 from src.extensions import db
-from src.models import EnvioEmail, Auditoria
+from src.models import EnvioEmail, Auditoria, Empresa
 from src.services.envios import finish_delivery
 
 
@@ -13,6 +13,36 @@ class DeliveryTests(unittest.TestCase):
     login = test_app.AppTests.login
     payload = test_app.AppTests.payload
     create_proposal = test_app.AppTests.create_proposal
+
+    def test_missing_logo_does_not_block_email_or_embed_broken_image(self):
+        from src.services.pdf import render_pdf_html
+        p = self.create_proposal()
+        company = db.session.get(Empresa, self.company)
+        company.logo = 'missing-logo.png'
+        db.session.commit()
+        with self.app.test_request_context('/'):
+            html = render_pdf_html(p)
+        self.assertNotIn('class="company-logo"', html)
+        self.assertIn('<table class="table">', html)
+        with patch('src.routes.propostas.generate_pdf', return_value=b'%PDF-test'):
+            with patch('src.services.brevo.brevo_service.send_transactional_email', return_value=True) as send:
+                response = self.client.post(f'/propostas/{p.id}/enviar', data={'destinatario':'test@example.com','assunto':'Teste'})
+                self.assertEqual(response.status_code, 302)
+                send.assert_called_once()
+                self.assertNotIn('/marca/', send.call_args.args[3])
+        self.assertEqual(EnvioEmail.query.one().status, 'enviado')
+        self.assertEqual(company.logo, 'missing-logo.png')
+        with self.client.session_transaction() as session:
+            self.assertTrue(any('sem logo' in message for category, message in session['_flashes']))
+
+    def test_logo_path_does_not_allow_parent_directory(self):
+        from src.services.pdf import company_logo_path
+        company = db.session.get(Empresa, self.company)
+        company.logo = '../private.png'
+        self.assertIsNone(company_logo_path(company))
+        company.logo = '..\\private.png'
+        self.assertIsNone(company_logo_path(company))
+
     def test_network_calls_without_active_transaction(self):
         p = self.create_proposal()
         identifier = p.id

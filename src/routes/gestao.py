@@ -11,6 +11,7 @@ from src.models import Empresa, Cliente, ProdutoServico, Usuario
 from src.core.security import roles_required, owned, audit
 from src.services.propostas import CLIENT_FIELDS
 from src.services.money import decimal_value
+from src.services.pdf import company_logo_path
 
 gestao_bp = Blueprint('gestao', __name__)
 
@@ -114,6 +115,9 @@ def empresa():
             if saved and saved.exists():
                 saved.unlink()
             flash('Não foi possível salvar a empresa. Verifique os campos e a imagem.', 'danger')
+    if obj.logo and not company_logo_path(obj):
+        flash('O banco possui um logo cadastrado, mas o arquivo não está disponível neste servidor. '
+              'Selecione a imagem novamente e salve a empresa.', 'warning')
     return render_template('cadastros/form.html', obj=obj, kind='empresa', title='Empresa emitente', fields=fields)
 
 
