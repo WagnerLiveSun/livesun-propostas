@@ -20,10 +20,8 @@ from src.extensions import db, login_manager, csrf, migrate
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s %(name)s %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('app_errors.log', encoding='utf-8')
-    ]
+    # Containers coletam stdout; não exigir escrita no diretório do código.
+    handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger(__name__)
 

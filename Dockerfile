@@ -15,7 +15,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
     && useradd --create-home --uid 10001 livesun
 COPY --chown=livesun:livesun . .
-RUN mkdir -p /app/storage/uploads && chown -R livesun:livesun /app/storage
+RUN mkdir -p /app/storage/uploads /home/livesun/.gunicorn /home/livesun/.cache \
+    && chown -R livesun:livesun /app/storage /home/livesun \
+    && chmod 700 /home/livesun/.gunicorn /home/livesun/.cache
 USER livesun
 EXPOSE 10000
 CMD ["gunicorn", "--config", "deploy/gunicorn.render.conf.py", "wsgi:app"]
