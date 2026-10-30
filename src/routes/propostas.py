@@ -159,23 +159,7 @@ def enviar(identifier):
         abort(400, 'Destinatário inválido.')
     if not subject or len(subject) > 255 or len(recipient) > 120 or not proposal.cliente_nome or not proposal.cliente_telefone:
         abort(400, 'Preencha cliente, destinatário e assunto válidos.')
-    logo_url = None
-    missing_logo = False
-    if company_logo_path(proposal.empresa):
-        token = URLSafeSerializer(current_app.secret_key, salt='marca-email').dumps(proposal.empresa.logo)
-        logo_url = current_app.config['PUBLIC_BASE_URL'] + url_for('gestao.marca_email', token=token)
-    elif proposal.empresa.logo:
-        missing_logo = True
     company_id, user_id = current_user.empresa_id, current_user.id
-    customer_name, number = proposal.cliente_nome, proposal.numero
-    email_html = render_template('email/proposta.html', p=proposal, mensagem=message, logo_url=logo_url)
-    pdf_html = render_pdf_html(proposal)
-    if missing_logo:
-        flash('O arquivo do logo não está disponível no servidor. A proposta será enviada sem logo; '
-              'acesse Empresa e envie a imagem novamente para os próximos envios.', 'warning')
-    # Não manter uma transação remota ociosa durante Chromium ou API externa.
-    db.session.rollback()
-    attachment = generate_pdf(pdf_html)
     try:
         delivery = EnvioEmail(empresa_id=company_id, proposta_id=identifier, destinatario=recipient,
                              assunto=subject, mensagem=message, status='processando')
@@ -185,8 +169,38 @@ def enviar(identifier):
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
+        current_app.logger.error('Falha ao registrar tentativa de envio da proposta %s, empresa %s. Brevo não chamado.',
+                                 identifier, company_id)
         flash('Não foi possível registrar a tentativa no banco. Nenhum e-mail foi enviado.', 'danger')
         return redirect(url_for('propostas.detalhe', identifier=identifier))
+    try:
+        return prepare_and_send(proposal, identifier, company_id, user_id, delivery_id, recipient, subject, message)
+    except PDFGenerationError as error:
+        db.session.rollback()
+        saved = finish_delivery(delivery_id, company_id, user_id, False)
+        flash(f'Não foi possível gerar o anexo. Nenhum e-mail foi enviado. {error}', 'danger')
+        if not saved:
+            flash('A tentativa foi registrada, mas seu resultado não pôde ser atualizado no banco.', 'warning')
+        return redirect(url_for('propostas.detalhe', identifier=identifier))
+
+
+def prepare_and_send(proposal, identifier, company_id, user_id, delivery_id, recipient, subject, message):
+    logo_url = None
+    missing_logo = False
+    if company_logo_path(proposal.empresa):
+        token = URLSafeSerializer(current_app.secret_key, salt='marca-email').dumps(proposal.empresa.logo)
+        logo_url = current_app.config['PUBLIC_BASE_URL'] + url_for('gestao.marca_email', token=token)
+    elif proposal.empresa.logo:
+        missing_logo = True
+    customer_name, number = proposal.cliente_nome, proposal.numero
+    email_html = render_template('email/proposta.html', p=proposal, mensagem=message, logo_url=logo_url)
+    pdf_html = render_pdf_html(proposal)
+    if missing_logo:
+        flash('O arquivo do logo não está disponível no servidor. A proposta será enviada sem logo; '
+              'acesse Empresa e envie a imagem novamente para os próximos envios.', 'warning')
+    # Não manter uma transação remota ociosa durante Chromium ou API externa.
+    db.session.rollback()
+    attachment = generate_pdf(pdf_html)
     successful = brevo_service.send_transactional_email(recipient, customer_name, subject, email_html,
                     attachment={'name': f'proposta-{number}.pdf', 'content': attachment})
     saved = finish_delivery(delivery_id, company_id, user_id, successful)

@@ -14,6 +14,37 @@ class DeliveryTests(unittest.TestCase):
     payload = test_app.AppTests.payload
     create_proposal = test_app.AppTests.create_proposal
 
+    def test_two_recipients_create_two_separate_history_rows(self):
+        p = self.create_proposal()
+        identifier = p.id
+        with patch('src.routes.propostas.generate_pdf', return_value=b'%PDF-test'):
+            with patch('src.services.brevo.brevo_service.send_transactional_email', return_value=True) as send:
+                for recipient in ['first@example.com', 'second@example.com']:
+                    response = self.client.post(f'/propostas/{identifier}/enviar', data={
+                        'destinatario': recipient, 'assunto': 'Proposta', 'mensagem': 'Segue anexo'})
+                    self.assertEqual(response.status_code, 302)
+                self.assertEqual(send.call_count, 2)
+        rows = EnvioEmail.query.filter_by(empresa_id=self.company, proposta_id=identifier).order_by(EnvioEmail.id).all()
+        self.assertEqual([row.destinatario for row in rows], ['first@example.com', 'second@example.com'])
+        self.assertEqual([row.status for row in rows], ['enviado', 'enviado'])
+        self.assertNotEqual(rows[0].id, rows[1].id)
+        self.assertEqual(Auditoria.query.filter_by(acao='enviar_proposta').count(), 2)
+
+    def test_pdf_failure_records_second_attempt_without_sending(self):
+        from src.services.pdf import PDFGenerationError
+        p = self.create_proposal()
+        identifier = p.id
+        with patch('src.routes.propostas.generate_pdf', side_effect=[b'%PDF-test', PDFGenerationError('Falha no navegador')]):
+            with patch('src.services.brevo.brevo_service.send_transactional_email', return_value=True) as send:
+                for recipient in ['first@example.com', 'second@example.com']:
+                    response = self.client.post(f'/propostas/{identifier}/enviar', data={
+                        'destinatario': recipient, 'assunto': 'Proposta'})
+                    self.assertEqual(response.status_code, 302)
+                send.assert_called_once()
+        rows = EnvioEmail.query.order_by(EnvioEmail.id).all()
+        self.assertEqual([row.destinatario for row in rows], ['first@example.com', 'second@example.com'])
+        self.assertEqual([row.status for row in rows], ['enviado', 'falha'])
+
     def test_missing_logo_does_not_block_email_or_embed_broken_image(self):
         from src.services.pdf import render_pdf_html
         p = self.create_proposal()
