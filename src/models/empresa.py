@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from src.extensions import db
+from sqlalchemy.dialects.mysql import MEDIUMBLOB
 
 
 def _utcnow():
@@ -17,6 +18,7 @@ class Empresa(db.Model):
     telefone = db.Column(db.String(20))
     email = db.Column(db.String(120))
     logo = db.Column(db.String(255))
+    logo_dados = db.deferred(db.Column(db.LargeBinary().with_variant(MEDIUMBLOB(), 'mysql')))
     usuarios_maximos = db.Column(db.Integer, default=3)
     ativo = db.Column(db.Boolean, default=True)
     data_criacao = db.Column(db.DateTime, default=_utcnow)

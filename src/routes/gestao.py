@@ -1,6 +1,6 @@
-from pathlib import Path
+from io import BytesIO
 from uuid import uuid4
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_file, abort
 from itsdangerous import URLSafeSerializer, BadSignature
 from flask_login import current_user, login_required
 from PIL import Image, UnidentifiedImageError
@@ -11,7 +11,7 @@ from src.models import Empresa, Cliente, ProdutoServico, Usuario
 from src.core.security import roles_required, owned, audit
 from src.services.propostas import CLIENT_FIELDS
 from src.services.money import decimal_value
-from src.services.pdf import company_logo_path
+from src.services.logos import company_logo_bytes
 
 gestao_bp = Blueprint('gestao', __name__)
 
@@ -91,7 +91,6 @@ def empresa():
     obj = db.session.get(Empresa, current_user.empresa_id)
     fields = {'nome': 150, 'razao_social': 150, 'cnpj_cpf': 18, 'endereco': 255, 'telefone': 20, 'email': 120}
     if request.method == 'POST':
-        saved = None
         try:
             text_fields(obj, fields)
             if not obj.nome:
@@ -103,19 +102,24 @@ def empresa():
                         raise ValueError('Logo deve ter no máximo 16 megapixels.')
                     image.thumbnail((1200, 1200))
                     filename = f'{obj.id}-{uuid4().hex}.png'
-                    saved = Path(current_app.config['UPLOAD_FOLDER']) / filename
-                    image.convert('RGBA').save(saved, format='PNG')
+                    buffer = BytesIO()
+                    image.convert('RGBA').save(buffer, format='PNG')
+                    data = buffer.getvalue()
+                    if len(data) > 2 * 1024 * 1024:
+                        raise ValueError('Logo convertido deve ter até 2 MB.')
+                    obj.logo_dados = data
                     obj.logo = filename
+            elif obj.logo and not obj.logo_dados:
+                # Preserva no banco um arquivo legado ainda disponível.
+                obj.logo_dados = company_logo_bytes(obj)
             audit('editar_empresa', 'empresa', obj.id)
             db.session.commit()
             flash('Empresa atualizada.', 'success')
             return redirect(url_for('gestao.empresa'))
         except (ValueError, UnidentifiedImageError, OSError, Image.DecompressionBombError) as error:
             db.session.rollback()
-            if saved and saved.exists():
-                saved.unlink()
             flash('Não foi possível salvar a empresa. Verifique os campos e a imagem.', 'danger')
-    if obj.logo and not company_logo_path(obj):
+    if obj.logo and not company_logo_bytes(obj):
         flash('O banco possui um logo cadastrado, mas o arquivo não está disponível neste servidor. '
               'Selecione a imagem novamente e salve a empresa.', 'warning')
     return render_template('cadastros/form.html', obj=obj, kind='empresa', title='Empresa emitente', fields=fields)
@@ -124,10 +128,10 @@ def empresa():
 @gestao_bp.route('/empresa/logo')
 @login_required
 def logo():
-    filename = current_user.empresa.logo
-    if not filename:
+    data = company_logo_bytes(current_user.empresa)
+    if not data:
         abort(404)
-    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+    return send_file(BytesIO(data), mimetype='image/png', max_age=0)
 
 
 @gestao_bp.route('/marca/<token>')
@@ -139,7 +143,11 @@ def marca_email(token):
         abort(404)
     if not isinstance(filename, str) or '/' in filename or '\\' in filename:
         abort(404)
-    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+    company = Empresa.query.filter_by(logo=filename).first_or_404()
+    data = company_logo_bytes(company)
+    if not data:
+        abort(404)
+    return send_file(BytesIO(data), mimetype='image/png', max_age=0)
 
 
 @gestao_bp.route('/usuarios', methods=['GET', 'POST'])

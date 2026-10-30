@@ -8,22 +8,11 @@ import subprocess
 import tempfile
 
 from flask import current_app, render_template, has_request_context
+from src.services.logos import company_logo_path, company_logo_bytes
 
 
 class PDFGenerationError(RuntimeError):
     pass
-
-
-def company_logo_path(company):
-    """Somente arquivos da pasta configurada; nunca buscar em outras empresas/pastas."""
-    if not company.logo:
-        return None
-    uploads = Path(current_app.config['UPLOAD_FOLDER']).resolve()
-    filename = company.logo
-    if '/' in filename or '\\' in filename:
-        return None
-    logo = (uploads / filename).resolve()
-    return logo if logo.parent == uploads and logo.is_file() else None
 
 
 def find_browser():
@@ -53,12 +42,9 @@ def render_pdf_html(proposal):
     """Reutiliza integralmente a impressão e embute os recursos locais."""
     static = Path(current_app.static_folder)
     logo_url = ''
-    logo = company_logo_path(proposal.empresa)
+    logo = company_logo_bytes(proposal.empresa)
     if logo:
-        try:
-            logo_url = 'data:image/png;base64,' + base64.b64encode(logo.read_bytes()).decode('ascii')
-        except OSError:
-            current_app.logger.warning('Logo indisponível para empresa %s; PDF gerado sem imagem.', proposal.empresa_id)
+        logo_url = 'data:image/png;base64,' + base64.b64encode(logo).decode('ascii')
     elif proposal.empresa.logo:
         current_app.logger.warning('Arquivo de logo ausente para empresa %s; PDF gerado sem imagem.', proposal.empresa_id)
     html = render_template('propostas/imprimir.html', p=proposal, proposal_logo_url=logo_url)

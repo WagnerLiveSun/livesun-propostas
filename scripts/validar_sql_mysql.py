@@ -38,11 +38,12 @@ if __name__ == '__main__':
                         connection.exec_driver_sql(statement)
                     if scenario == 'upgrade':
                         connection.exec_driver_sql('ALTER TABLE propostas DROP COLUMN condicao_pagamento')
+                        connection.exec_driver_sql('ALTER TABLE empresas DROP COLUMN logo_dados')
                         connection.exec_driver_sql("UPDATE alembic_version SET version_num='9eb8e86ea7b2'")
                         upgrade = (ROOT / 'deploy/mysql/02_atualizar_estrutura_inicial.sql').read_text(encoding='utf-8')
                         for statement in statements(upgrade):
                             connection.exec_driver_sql(statement)
-                    assert connection.exec_driver_sql('SELECT version_num FROM alembic_version').scalar() == '73bd0d15d1db'
+                    assert connection.exec_driver_sql('SELECT version_num FROM alembic_version').scalar() == 'b8215bc35a91'
                     differences = compare_metadata(MigrationContext.configure(connection), db.metadata)
                     assert not differences, differences
                     assert connection.exec_driver_sql('SELECT COUNT(*) FROM usuarios').scalar() == 0

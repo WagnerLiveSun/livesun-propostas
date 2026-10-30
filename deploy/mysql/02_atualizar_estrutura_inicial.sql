@@ -12,3 +12,9 @@ ALTER TABLE propostas ADD COLUMN condicao_pagamento VARCHAR(500);
 
 UPDATE alembic_version SET version_num='73bd0d15d1db' WHERE alembic_version.version_num = '9eb8e86ea7b2';
 
+-- Running upgrade 73bd0d15d1db -> b8215bc35a91
+
+ALTER TABLE empresas ADD COLUMN logo_dados MEDIUMBLOB;
+
+UPDATE alembic_version SET version_num='b8215bc35a91' WHERE alembic_version.version_num = '73bd0d15d1db';
+

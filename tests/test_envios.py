@@ -14,6 +14,43 @@ class DeliveryTests(unittest.TestCase):
     payload = test_app.AppTests.payload
     create_proposal = test_app.AppTests.create_proposal
 
+    def test_logo_survives_two_sends_without_local_file(self):
+        import io
+        from pathlib import Path
+        from PIL import Image
+        from itsdangerous import URLSafeSerializer
+        p = self.create_proposal()
+        identifier = p.id
+        image = io.BytesIO()
+        Image.new('RGBA', (50, 50), (0, 100, 200, 255)).save(image, format='PNG')
+        image.seek(0)
+        response = self.client.post('/empresa', data={'nome':'Empresa A', 'logo':(image,'logo.png')},
+                                    content_type='multipart/form-data')
+        self.assertEqual(response.status_code, 302)
+        company = db.session.get(Empresa, self.company)
+        data = company.logo_dados
+        self.assertTrue(data.startswith(b'\x89PNG'))
+        self.assertFalse((Path(self.uploads.name) / company.logo).exists())
+        token = URLSafeSerializer(self.app.secret_key, salt='marca-email').dumps(company.logo)
+        with patch('src.routes.propostas.generate_pdf', return_value=b'%PDF-test') as pdf:
+            with patch('src.services.brevo.brevo_service.send_transactional_email', return_value=True) as send:
+                for index in range(2):
+                    response = self.client.post(f'/propostas/{identifier}/enviar', data={
+                        'destinatario':f'test{index}@example.com', 'assunto':'Proposta'})
+                    self.assertEqual(response.status_code, 302)
+                    self.assertIn('data:image/png;base64,', pdf.call_args.args[0])
+                    self.assertIn('/marca/', send.call_args.args[3])
+        self.assertEqual(db.session.get(Empresa, self.company).logo_dados, data)
+        response = self.client.get('/empresa/logo')
+        self.assertEqual(response.data, data)
+        response.close()
+        self.client.post('/auth/logout')
+        response = self.client.get('/marca/'+token)
+        self.assertEqual(response.data, data)
+        response.close()
+        self.login('other')
+        self.assertEqual(self.client.get('/empresa/logo').status_code, 404)
+
     def test_two_recipients_create_two_separate_history_rows(self):
         p = self.create_proposal()
         identifier = p.id

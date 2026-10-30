@@ -7,7 +7,8 @@ from src.extensions import db
 from src.core.security import roles_required, owned, audit
 from src.models import Proposta, PropostaItem, Cliente, ProdutoServico, EnvioEmail, Auditoria
 from src.services.propostas import fill_proposal, new_proposal, save_customer, STATUSES
-from src.services.pdf import generate_pdf, render_pdf_html, company_logo_path, PDFGenerationError
+from src.services.pdf import generate_pdf, render_pdf_html, PDFGenerationError
+from src.services.logos import company_logo_bytes
 from src.services.envios import finish_delivery
 from sqlalchemy.exc import SQLAlchemyError
 from src.services.brevo import brevo_service
@@ -187,7 +188,7 @@ def enviar(identifier):
 def prepare_and_send(proposal, identifier, company_id, user_id, delivery_id, recipient, subject, message):
     logo_url = None
     missing_logo = False
-    if company_logo_path(proposal.empresa):
+    if company_logo_bytes(proposal.empresa):
         token = URLSafeSerializer(current_app.secret_key, salt='marca-email').dumps(proposal.empresa.logo)
         logo_url = current_app.config['PUBLIC_BASE_URL'] + url_for('gestao.marca_email', token=token)
     elif proposal.empresa.logo:

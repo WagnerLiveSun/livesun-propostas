@@ -1,6 +1,6 @@
 -- Somente leitura. Executar no banco selecionado depois da importação.
 SELECT DATABASE() AS banco_selecionado, VERSION() AS versao_servidor;
-SELECT version_num AS revisao_esperada_73bd0d15d1db FROM alembic_version;
+SELECT version_num AS revisao_esperada_b8215bc35a91 FROM alembic_version;
 SELECT table_name, engine, table_collation
 FROM information_schema.tables
 WHERE table_schema = DATABASE()
