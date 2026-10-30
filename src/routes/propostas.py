@@ -1,0 +1,175 @@
+from datetime import datetime, timezone
+from io import BytesIO
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, send_file, current_app
+from itsdangerous import URLSafeSerializer
+from flask_login import login_required, current_user
+from src.extensions import db
+from src.core.security import roles_required, owned, audit
+from src.models import Proposta, PropostaItem, Cliente, ProdutoServico, EnvioEmail, Auditoria
+from src.services.propostas import fill_proposal, new_proposal, save_customer, STATUSES
+from src.services.pdf import generate_pdf, PDFGenerationError
+from src.services.brevo import brevo_service
+
+propostas_bp = Blueprint('propostas', __name__, url_prefix='/propostas')
+
+
+@propostas_bp.errorhandler(PDFGenerationError)
+def pdf_error(error):
+    flash(str(error), 'danger')
+    return redirect(url_for('propostas.index'))
+
+
+def filtered_query():
+    query = Proposta.query.filter_by(empresa_id=current_user.empresa_id)
+    if request.args.get('status') in STATUSES:
+        query = query.filter_by(status=request.args['status'])
+    if request.args.get('cliente_id', type=int):
+        query = query.filter_by(cliente_id=request.args.get('cliente_id', type=int))
+    for field, operation in [('inicio', 'start'), ('fim', 'end')]:
+        if request.args.get(field):
+            try:
+                value = datetime.strptime(request.args[field], '%Y-%m-%d').date()
+            except ValueError:
+                abort(400, 'Data de filtro inválida.')
+            query = query.filter(Proposta.data_emissao >= value if operation == 'start' else Proposta.data_emissao <= value)
+    return query
+
+
+@propostas_bp.route('/')
+@login_required
+def index():
+    page = filtered_query().order_by(Proposta.id.desc()).paginate(page=request.args.get('page', 1, type=int), per_page=25)
+    return render_template('propostas/lista.html', page=page, statuses=STATUSES,
+                           clientes=Cliente.query.filter_by(empresa_id=current_user.empresa_id).order_by(Cliente.nome).all())
+
+
+@propostas_bp.route('/nova', methods=['GET', 'POST'])
+@roles_required('admin', 'operador')
+def nova():
+    return edit_form(new_proposal(), True)
+
+
+@propostas_bp.route('/<int:identifier>/editar', methods=['GET', 'POST'])
+@roles_required('admin', 'operador')
+def editar(identifier):
+    proposal = owned(Proposta, identifier)
+    if proposal.status in ('aceita', 'rejeitada'):
+        abort(409, 'Proposta finalizada. Replique para criar uma nova versão.')
+    return edit_form(proposal, False)
+
+
+def edit_form(proposal, creating):
+    if request.method == 'POST':
+        try:
+            fill_proposal(proposal, request.form)
+            db.session.add(proposal)
+            db.session.flush()
+            audit('criar_proposta' if creating else 'editar_proposta', 'proposta', proposal.id)
+            db.session.commit()
+            flash('Proposta salva.', 'success')
+            return redirect(url_for('propostas.detalhe', identifier=proposal.id))
+        except ValueError as error:
+            db.session.rollback()
+            flash(str(error), 'danger')
+            return render_template('propostas/form.html', p=proposal, creating=creating, submitted=request.form,
+                                   clientes=Cliente.query.filter_by(empresa_id=current_user.empresa_id, ativo=True).all(),
+                                   produtos=ProdutoServico.query.filter_by(empresa_id=current_user.empresa_id, ativo=True).all()), 400
+    return render_template('propostas/form.html', p=proposal, creating=creating, submitted=None,
+                           clientes=Cliente.query.filter_by(empresa_id=current_user.empresa_id, ativo=True).all(),
+                           produtos=ProdutoServico.query.filter_by(empresa_id=current_user.empresa_id, ativo=True).all())
+
+
+@propostas_bp.route('/<int:identifier>')
+@login_required
+def detalhe(identifier):
+    proposal = owned(Proposta, identifier)
+    history = Auditoria.query.filter_by(empresa_id=current_user.empresa_id, entidade='proposta', entidade_id=identifier).order_by(Auditoria.id.desc()).all()
+    return render_template('propostas/detalhe.html', p=proposal, history=history)
+
+
+@propostas_bp.route('/<int:identifier>/status', methods=['POST'])
+@roles_required('admin', 'operador')
+def status(identifier):
+    proposal = owned(Proposta, identifier)
+    target = request.form.get('status')
+    if target not in ('pendente', 'aceita', 'rejeitada') or proposal.status in ('aceita', 'rejeitada'):
+        abort(409, 'Transição de status não permitida.')
+    if not proposal.cliente_nome or not proposal.cliente_telefone or proposal.itens.count() == 0:
+        abort(400, 'A proposta precisa de cliente e itens válidos.')
+    if target == 'aceita':
+        save_customer(proposal)
+        proposal.aprovado_por = current_user.id
+        proposal.aprovado_em = datetime.now(timezone.utc).replace(tzinfo=None)
+    proposal.status = target
+    audit({'aceita': 'aprovar_proposta', 'rejeitada': 'rejeitar_proposta', 'pendente': 'marcar_pendente'}[target], 'proposta', proposal.id)
+    db.session.commit()
+    flash('Status atualizado.', 'success')
+    return redirect(url_for('propostas.detalhe', identifier=identifier))
+
+
+@propostas_bp.route('/<int:identifier>/replicar', methods=['POST'])
+@roles_required('admin', 'operador')
+def replicar(identifier):
+    original = owned(Proposta, identifier)
+    proposal = new_proposal()
+    for name in ('subtotal', 'desconto', 'impostos', 'outros_acrescimos', 'total', 'total_extenso', 'observacoes', 'validade', 'condicao_pagamento'):
+        setattr(proposal, name, getattr(original, name))
+    proposal.cliente_nome = ''
+    proposal.cliente_telefone = ''
+    if proposal.validade and proposal.validade < proposal.data_emissao:
+        proposal.validade = None
+    db.session.add(proposal)
+    for item in original.itens.order_by(PropostaItem.sequencial):
+        proposal.itens.append(PropostaItem(**{name: getattr(item, name) for name in
+                             ('sequencial', 'codigo', 'descricao', 'quantidade', 'unidade', 'valor_unitario', 'valor_total')}))
+    db.session.flush()
+    audit('replicar_proposta', 'proposta', proposal.id)
+    db.session.commit()
+    flash('Cópia criada como rascunho. Informe o cliente de destino.', 'info')
+    return redirect(url_for('propostas.editar', identifier=proposal.id))
+
+
+@propostas_bp.route('/<int:identifier>/pdf')
+@login_required
+def pdf(identifier):
+    proposal = owned(Proposta, identifier)
+    return send_file(BytesIO(generate_pdf(proposal)), mimetype='application/pdf', as_attachment=True,
+                     download_name=f'proposta-{proposal.numero}.pdf')
+
+
+@propostas_bp.route('/<int:identifier>/imprimir')
+@login_required
+def imprimir(identifier):
+    return render_template('propostas/imprimir.html', p=owned(Proposta, identifier))
+
+
+@propostas_bp.route('/<int:identifier>/enviar', methods=['POST'])
+@roles_required('admin', 'operador')
+def enviar(identifier):
+    from email_validator import validate_email, EmailNotValidError
+    proposal = owned(Proposta, identifier)
+    recipient = request.form.get('destinatario', '').strip()
+    subject = request.form.get('assunto', '').strip()
+    message = request.form.get('mensagem', '').strip()
+    try:
+        validate_email(recipient, check_deliverability=False)
+    except EmailNotValidError:
+        abort(400, 'Destinatário inválido.')
+    if not subject or len(subject) > 255 or len(recipient) > 120 or not proposal.cliente_nome or not proposal.cliente_telefone:
+        abort(400, 'Preencha cliente, destinatário e assunto válidos.')
+    logo_url = None
+    if proposal.empresa.logo:
+        token = URLSafeSerializer(current_app.secret_key, salt='marca-email').dumps(proposal.empresa.logo)
+        logo_url = current_app.config['PUBLIC_BASE_URL'] + url_for('gestao.marca_email', token=token)
+    successful = brevo_service.send_transactional_email(recipient, proposal.cliente_nome, subject,
+                    render_template('email/proposta.html', p=proposal, mensagem=message, logo_url=logo_url),
+                    attachment={'name': f'proposta-{proposal.numero}.pdf', 'content': generate_pdf(proposal)})
+    db.session.add(EnvioEmail(empresa_id=current_user.empresa_id, proposta_id=proposal.id,
+                             destinatario=recipient, assunto=subject, mensagem=message,
+                             status='enviado' if successful else 'falha'))
+    if successful and proposal.status in ('rascunho', 'pendente'):
+        proposal.status = 'enviada'
+    audit('enviar_proposta' if successful else 'falha_envio_proposta', 'proposta', proposal.id)
+    db.session.commit()
+    flash('E-mail enviado.' if successful else 'Envio não concluído. Verifique a configuração exclusiva do Brevo.', 'success' if successful else 'danger')
+    return redirect(url_for('propostas.detalhe', identifier=identifier))

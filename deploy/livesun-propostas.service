@@ -1,0 +1,20 @@
+[Unit]
+Description=LiveSun Propostas - Gunicorn
+After=network.target
+
+[Service]
+Type=simple
+User=livesun
+Group=livesun
+WorkingDirectory=/opt/livesun-propostas
+Environment=FLASK_ENV=production
+Environment=HOME=/opt/livesun-propostas
+ExecStart=/opt/livesun-propostas/.venv/bin/gunicorn --config deploy/gunicorn.conf.py wsgi:app
+Restart=on-failure
+RestartSec=5
+UMask=0077
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

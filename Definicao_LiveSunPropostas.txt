@@ -1,0 +1,266 @@
+
+A definição esta errada. Ele não vai fazer parte do programa LiveSun Comercial, ele vai ser separado. Proposta deve ser independente, acesso apenas dele sem qualquer relação direta com livesun comercial. Usar a mesma identidade visual ok, mas totalmente independente, banco de dados fronte end e backend separados
+
+
+Correto. LiveSun - Propostas será um sistema totalmente independente do LiveSun Comercial: terá seu próprio frontend, backend, banco de dados, autenticação, usuários e empresas. A semelhança será apenas na identidade visual e na experiência de uso.
+
+Definição — LiveSun - Propostas
+LiveSun - Propostas é um sistema SaaS autônomo para criação, envio, aprovação, replicação, impressão e acompanhamento de propostas comerciais/orçamentos. Ele não compartilha banco, login, cadastros, APIs ou dependências com o LiveSun Comercial.
+
+1. Arquitetura Independente
+Camada	Definição
+Frontend	Aplicação web própria, responsiva, em HTML/CSS/JavaScript com templates Jinja2 ou SPA
+Backend	API/serviço próprio em Python, Flask e SQLAlchemy
+Banco de dados	Banco exclusivo do LiveSun - Propostas
+MySQL	Opção principal de banco
+PostgreSQL	Opção alternativa, configurável por variável de ambiente
+Autenticação	Login, sessão, senhas e recuperação de senha próprios
+E-mail	Integração própria com Brevo
+Deploy	Aplicação, banco e domínio/subdomínio independentes
+O sistema deve ser desenvolvido como um produto SaaS isolado, sem qualquer leitura, escrita ou sincronização direta com o banco do LiveSun Comercial.
+
+2. Identidade Visual
+O sistema deve usar a identidade visual LiveSun, mas com código, componentes e estilos próprios:
+
+Tema claro: BlueMetal, com azul metálico.
+
+Tema escuro: Moonlight.
+
+Logo do desenvolvedor LiveSun na interface.
+
+Logo da empresa do usuário na proposta impressa.
+
+Layout responsivo para desktop, tablet e celular.
+
+Cards, tabelas, formulários, botões e grids no padrão visual LiveSun.
+
+3. Acesso e Contas
+Acesso simples por e-mail ou usuário e senha.
+
+Cada usuário pertence a uma empresa/conta.
+
+user_id e empresa_id são únicos.
+
+Um e-mail não pode se repetir entre usuários da mesma empresa.
+
+Recuperação de senha por link temporário enviado pelo Brevo.
+
+Perfis iniciais: Administrador, Operador e Visualizador.
+
+Todos os dados devem ser isolados por empresa_id; um usuário jamais poderá acessar propostas, clientes, itens ou configurações de outra empresa.
+
+4. Cadastro da Empresa
+Cada conta cadastra a empresa emitente com:
+
+Nome fantasia.
+
+Razão social.
+
+CNPJ ou CPF.
+
+Endereço.
+
+Telefone.
+
+E-mail.
+
+Logo.
+
+O logo será exibido na proposta, no PDF e no e-mail enviado.
+
+5. Clientes
+O cadastro de cliente existe, mas não é obrigatório antes de emitir a proposta.
+
+Campo	Obrigatório
+Nome	Sim
+Telefone	Sim
+CNPJ ou CPF	Não
+E-mail	Não
+Nome do contato	Não
+Endereço	Não
+Na proposta, o usuário pode informar ou editar os dados do cliente livremente. Quando a proposta for aprovada, o sistema grava ou atualiza o cliente na base própria do LiveSun - Propostas.
+
+6. Produtos e Serviços
+O cadastro de itens deve permitir:
+
+Código.
+
+Descrição.
+
+Tipo: P = Produto ou S = Serviço.
+
+Unidade.
+
+Valor unitário.
+
+Situação: ativo ou inativo.
+
+Os itens cadastrados podem ser selecionados na proposta, mas também será permitido incluir itens livres diretamente no documento.
+
+7. Proposta Comercial
+Dados do cliente
+Nome — obrigatório.
+
+Telefone — obrigatório.
+
+CNPJ ou CPF — opcional.
+
+E-mail — opcional.
+
+Contato — opcional.
+
+Endereço — opcional.
+
+Itens
+Coluna	Regra
+Item	Sequencial automático
+Código	Opcional
+Descrição	Obrigatória
+Quantidade	Obrigatória
+Unidade	Opcional
+Valor unitário	Obrigatório
+Valor total	Calculado: quantidade × valor unitário
+Totalização
+Campos:
+
+Desconto.
+
+Impostos.
+
+Outros acréscimos.
+
+Observações livres.
+
+Cálculo:
+
+Total
+=
+?
+(
+valor total dos itens
+)
+-
+desconto
++
+impostos
++
+outros acr
+e
+´
+scimos
+Total=?(valor total dos itens)-desconto+impostos+outros acr 
+e
+´
+ scimos
+O total deve ser exibido em valor numérico e por extenso.
+
+8. Status e Aprovação
+Status possíveis:
+
+Rascunho
+
+Enviada
+
+Pendente
+
+Aceita
+
+Rejeitada
+
+Ao aprovar, o sistema deve:
+
+Validar os campos obrigatórios.
+
+Gravar a proposta e os itens.
+
+Gravar ou atualizar o cliente.
+
+Alterar o status para Aceita.
+
+Registrar usuário, data e hora.
+
+Permitir gerar PDF e reenviar a proposta.
+
+9. Replicação
+A proposta poderá ser replicada para outro cliente.
+
+A replicação deve:
+
+Copiar itens, quantidades, valores, desconto, impostos, acréscimos e observações.
+
+Permitir alterar o cliente de destino.
+
+Criar uma nova proposta com novo número.
+
+Iniciar como Rascunho.
+
+Manter a proposta original intacta.
+
+10. Impressão e Envio
+A proposta deve ser impressa ou exportada em PDF no formato do anexo, contendo:
+
+Logo da empresa.
+
+Dados da empresa emitente.
+
+Dados do cliente.
+
+Número, data e validade.
+
+Itens, quantidades, unidades e valores.
+
+Desconto, impostos, outros acréscimos e total.
+
+Valor por extenso.
+
+Observações.
+
+Título: Proposta comercial / Orçamento.
+
+O envio será feito pela API do Brevo, com PDF anexado, assunto e mensagem configuráveis, histórico de envio e possibilidade de reenvio.
+
+11. Dashboard
+O dashboard deve exibir, por empresa:
+
+Número de clientes.
+
+Total de propostas.
+
+Propostas enviadas.
+
+Propostas pendentes.
+
+Propostas aceitas.
+
+Propostas rejeitadas.
+
+Valor total das propostas.
+
+Valor total das propostas aceitas.
+
+Deve permitir filtros por período, status e cliente.
+
+12. Banco de Dados Próprio
+Tabela	Campos principais
+empresas	id, nome, razão_social, cnpj_cpf, endereço, telefone, e-mail, logo
+usuarios	id, empresa_id, nome, e-mail, usuário, senha_hash, perfil, ativo
+clientes	id, empresa_id, nome, cnpj_cpf, e-mail, telefone, contato, endereço
+produtos_servicos	id, empresa_id, código, descrição, tipo P/S, unidade, valor_unitário, ativo
+propostas	id, empresa_id, usuario_id, cliente_id, número, data, validade, status, subtotal, desconto, impostos, outros_acrescimos, total, total_extenso, observações
+proposta_itens	id, proposta_id, sequencial, código, descrição, quantidade, unidade, valor_unitário, valor_total
+envios_email	id, empresa_id, proposta_id, destinatário, assunto, status, data_envio
+auditoria	id, empresa_id, usuario_id, ação, entidade, entidade_id, data_hora
+13. Regras Técnicas
+Python, Flask, SQLAlchemy e Flask-Migrate.
+
+Compatibilidade com MySQL e PostgreSQL, sem código acoplado a um único banco.
+
+Senhas com hash seguro.
+
+Isolamento obrigatório por empresa_id em todas as consultas.
+
+Auditoria de criação, edição, envio, aprovação e rejeição.
+
+Nenhuma tabela, view, API, credencial ou integração compartilhada com o LiveSun Comercial.
+
+Temas BlueMetal e Moonlight aplicados de forma consistente em toda a interface.

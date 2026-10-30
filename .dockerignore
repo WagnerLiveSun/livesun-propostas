@@ -1,0 +1,17 @@
+.git
+.venv
+venv
+.devin
+.env
+.env.*
+Key_Brevo.txt
+sk_render.txt
+**/__pycache__
+**/*.pyc
+**/*.db
+**/*.sqlite*
+**/*.log
+uploads
+storage
+tests
+*.pdf

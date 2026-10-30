@@ -1,0 +1,7 @@
+<form class="filter no-print" method="get">
+<div><label for="inicio">De</label><input class="form-control" type="date" id="inicio" name="inicio" value="{{ request.args.get('inicio','') }}"></div>
+<div><label for="fim">Até</label><input class="form-control" type="date" id="fim" name="fim" value="{{ request.args.get('fim','') }}"></div>
+<div><label for="status">Status</label><select class="form-select" name="status" id="status"><option value="">Todos</option>{% for s in statuses %}<option value="{{ s }}" {{ 'selected' if request.args.get('status') == s }}>{{ s|capitalize }}</option>{% endfor %}</select></div>
+<div><label for="cliente_id">Cliente cadastrado</label><select class="form-select" name="cliente_id" id="cliente_id"><option value="">Todos</option>{% for c in clientes %}<option value="{{ c.id }}" {{ 'selected' if request.args.get('cliente_id') == c.id|string }}>{{ c.nome }}</option>{% endfor %}</select></div>
+<button class="btn btn-primary">Filtrar</button><a class="btn btn-outline-secondary" href="{{ request.path }}">Limpar</a>
+</form>

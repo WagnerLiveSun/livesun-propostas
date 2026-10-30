@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LiveSun - Propostas{% endblock %}</title>
+
+    <script>
+        try {
+            var storedTheme = localStorage.getItem('ls-theme') || 'moonlight';
+            document.documentElement.setAttribute('data-theme', storedTheme);
+        } catch (e) {
+            document.documentElement.setAttribute('data-theme', 'moonlight');
+        }
+    </script>
+
+    <link href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ stylesheet_url }}">
+    {% block extra_css %}{% endblock %}
+
+    <style>
+        :root[data-theme="moonlight"] {
+            --ls-bg-main: #08111f;
+            --ls-bg-elevated: #0d1728;
+            --ls-border-subtle: rgba(160, 176, 204, 0.22);
+            --ls-border-strong: rgba(214, 224, 238, 0.38);
+            --ls-text-main: #e8eefc;
+            --ls-text-muted: #a8b6cc;
+            --ls-text-strong: #f8fbff;
+            --ls-page-title: #f4f8ff;
+            --ls-input-bg: rgba(12, 24, 43, 0.92);
+            --ls-input-border: rgba(148, 163, 184, 0.30);
+            --ls-input-disabled-bg: rgba(12, 24, 43, 0.62);
+            --ls-primary: #dfe7f4;
+            --ls-primary-soft: rgba(223, 231, 244, 0.12);
+            --ls-accent: #8fd3ff;
+            --ls-topbar-bg: rgba(8, 17, 31, 0.94);
+            --ls-sidebar-bg: rgba(10, 20, 36, 0.96);
+            --ls-card-bg: rgba(15, 25, 43, 0.82);
+            --ls-hover-bg: rgba(143, 211, 255, 0.12);
+            --ls-footer-bg: rgba(8, 17, 31, 0.95);
+            --ls-dropdown-bg: #101b2d;
+            --ls-dropdown-text: #e8eefc;
+            --ls-alert-success-text: #86efac;
+            --ls-alert-danger-text: #fca5a5;
+            --ls-alert-warning-text: #fcd34d;
+            --ls-alert-info-text: #93c5fd;
+            --ls-header-bg: rgba(143, 211, 255, 0.08);
+            --ls-header-border: rgba(143, 211, 255, 0.20);
+            --ls-sidebar-active-text: #092f75;
+            --ls-sidebar-active-shadow: rgba(125, 211, 252, 0.22);
+            --ls-body-glow-top: rgba(143, 211, 255, 0.14);
+            --ls-body-glow-mid: rgba(226, 232, 240, 0.08);
+            --ls-body-glow-bottom: rgba(59, 130, 246, 0.16);
+        }
+
+        :root[data-theme="bluemetal"] {
+            --ls-bg-main: #f4f8fc;
+            --ls-bg-elevated: #ffffff;
+            --ls-border-subtle: #b9cbe0;
+            --ls-border-strong: #063172;
+            --ls-text-main: #18324a;
+            --ls-text-muted: #57718a;
+            --ls-text-strong: #0f1f2e;
+            --ls-page-title: #1f4f7a;
+            --ls-input-bg: #ffffff;
+            --ls-input-border: #6da8eb;
+            --ls-input-disabled-bg: #edf4fb;
+            --ls-primary: #2b54a0;
+            --ls-primary-soft: rgba(47, 111, 168, 0.12);
+            --ls-accent: #7fb0de;
+            --ls-topbar-bg: #ffffff;
+            --ls-sidebar-bg: #ffffff;
+            --ls-card-bg: #ffffff;
+            --ls-hover-bg: #e4eef8;
+            --ls-footer-bg: #f4f8fc;
+            --ls-dropdown-bg: #ffffff;
+            --ls-dropdown-text: #18324a;
+            --ls-alert-success-text: #1f6b3b;
+            --ls-alert-danger-text: #8b2c2c;
+            --ls-alert-warning-text: #8a5a00;
+            --ls-alert-info-text: #1f4f75;
+            --ls-header-bg: #eff5fb;
+            --ls-header-border: #b9cbe0;
+            --ls-sidebar-active-text: #102466fd;
+            --ls-sidebar-active-shadow: rgba(31, 79, 122, 0.22);
+            --ls-body-glow-top: rgba(127, 176, 222, 0.26);
+            --ls-body-glow-mid: rgba(127, 176, 222, 0.12);
+            --ls-body-glow-bottom: rgba(47, 111, 168, 0.16);
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top, var(--ls-body-glow-top), transparent 40%),
+                radial-gradient(circle at right 20%, var(--ls-body-glow-mid), transparent 28%),
+                radial-gradient(circle at bottom, var(--ls-body-glow-bottom), transparent 44%),
+                var(--ls-bg-main);
+            color: var(--ls-text-main);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .form-control, .form-select, .form-check-input {
+            background-color: var(--ls-input-bg) !important;
+            border-color: var(--ls-input-border) !important;
+            color: var(--ls-text-main) !important;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: var(--ls-input-bg) !important;
+            border-color: var(--ls-primary) !important;
+            color: var(--ls-text-main) !important;
+            box-shadow: 0 0 0 0.2rem var(--ls-primary-soft) !important;
+        }
+
+        .alert-success { background-color: #064e3b !important; color: #86efac !important; border-color: #065f46 !important; }
+        .alert-danger { background-color: #7f1d1d !important; color: #fca5a5 !important; border-color: #991b1b !important; }
+        .alert-warning { background-color: #78350f !important; color: #fcd34d !important; border-color: #92400e !important; }
+        .alert-info { background-color: #1e3a8a !important; color: #93c5fd !important; border-color: #1e40af !important; }
+    </style>
+</head>
+<body class="{{ 'has-sidebar' if current_user.is_authenticated else '' }}">
+    <header class="topbar no-print">
+        <a class="brand" href="{{ url_for('dashboard.index') }}" aria-label="LiveSun Propostas — início"><img class="developer-logo" src="{{ developer_logo_url }}" alt="LiveSun Tecnologia" width="389" height="200"><small>PROPOSTAS</small></a>
+        <div class="topbar-actions">
+        {% if current_user.is_authenticated %}
+            <form class="topbar-logout" method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-secondary">Sair</button></form>
+        {% endif %}
+            <button type="button" id="theme-toggle" class="btn btn-sm btn-outline-secondary">Alternar tema</button>
+        </div>
+    </header>
+    {% if current_user.is_authenticated %}
+    <div class="sidebar-mobile-control no-print"><button type="button" id="sidebar-toggle" class="btn btn-sm btn-outline-secondary" aria-controls="sidebar" aria-expanded="false">☰ Menu</button></div>
+    <aside class="sidebar no-print" id="sidebar" aria-label="Menu lateral">
+        <div class="sidebar-account"><strong>{{ current_user.empresa.nome }}</strong><small>{{ current_user.nome }} · {{ current_user.perfil }}</small></div>
+        <nav class="sidebar-nav" aria-label="Navegação principal">
+            {% set section = request.endpoint or '' %}
+            {% set links = [('dashboard.index', 'Dashboard', section == 'dashboard.index'), ('propostas.index', 'Propostas', section.startswith('propostas.')), ('gestao.clientes', 'Clientes', section in ['gestao.clientes', 'gestao.cliente_form']), ('gestao.itens', 'Produtos / serviços', section in ['gestao.itens', 'gestao.item_form'])] %}
+            {% if current_user.perfil == 'admin' %}{% set links = links + [('gestao.empresa', 'Empresa', section == 'gestao.empresa'), ('gestao.usuarios', 'Usuários', section == 'gestao.usuarios')] %}{% endif %}
+            {% set links = links + [('auth.perfil', 'Meu perfil', section == 'auth.perfil')] %}
+            {% for endpoint, label, active in links %}
+            <a href="{{ url_for(endpoint) }}" class="sidebar-link{{ ' active' if active else '' }}"{% if active %} aria-current="page"{% endif %}>{{ label }}</a>
+            {% endfor %}
+        </nav>
+    </aside>
+    {% endif %}
+    <div class="app-content">
+    {% if current_user.is_authenticated %}<div class="container-fluid px-lg-5 mt-3 no-print"><small>{{ current_user.empresa.nome }} · {{ current_user.perfil }}</small>
+    {% for category, message in get_flashed_messages(with_categories=true) %}<div class="alert alert-{{ category }} mt-2">{{ message }}</div>{% endfor %}</div>{% endif %}
+    {% block content %}{% endblock %}
+    <footer class="no-print"><img class="footer-logo" src="{{ developer_logo_url }}" alt="LiveSun Tecnologia" width="389" height="200"><div>© 2026 LiveSun · Propostas Comerciais · Todos os direitos reservados.</div><div>Suporte: <a href="mailto:suporte@livesun.com.br">suporte@livesun.com.br</a></div></footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js', v='sidebar-1') }}" defer></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

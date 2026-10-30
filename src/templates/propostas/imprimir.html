@@ -1,0 +1,39 @@
+{% extends 'layout.html' %}
+{% block title %}Proposta {{ p.numero }}{% endblock %}
+{% block extra_css %}
+<style>
+    @media print {
+        @page {
+            size: A4;
+            margin: 12mm 12mm 18mm;
+            @top-left { content: none; }
+            @top-center { content: none; }
+            @top-right { content: none; }
+            @bottom-left { content: none; }
+            @bottom-right { content: none; }
+            @bottom-center {
+                content: {{ ('Proposta ' ~ p.numero ~ ' · Página ')|tojson }} counter(page) " de " counter(pages);
+                font-family: Arial, sans-serif;
+                font-size: 8pt;
+                color: #536477;
+            }
+        }
+        html, body { min-height: 0 !important; height: auto !important; }
+        .app-content { margin: 0 !important; min-height: 0 !important; }
+        .document { width: auto; max-width: none; margin: 0 !important; padding: 0 !important; }
+        .document .table-responsive { overflow: visible !important; }
+        .document table { width: 100%; border-collapse: collapse; }
+        .document thead { display: table-header-group; }
+        .document tr { break-inside: avoid; }
+        .document h1, .document h2, .document h3 { break-after: avoid; }
+        .document p { orphans: 2; widows: 2; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="text-center no-print mt-3">
+    <button class="btn btn-primary" type="button" onclick="window.print()">Imprimir proposta</button>
+    <p class="text-muted mt-2">Na janela de impressão, use papel A4, escala 100% e desative “Cabeçalhos e rodapés” para não imprimir a data e o endereço do navegador.</p>
+</div>
+{% include 'propostas/documento.html' %}
+{% endblock %}

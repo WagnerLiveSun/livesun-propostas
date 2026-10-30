@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: livesun-propostas
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    disk:
+      name: livesun-uploads
+      mountPath: /app/storage
+      sizeGB: 1
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_ENGINE
+        value: mysql
+      - key: MYSQL_HOST
+        sync: false
+      - key: MYSQL_PORT
+        value: "3306"
+      - key: MYSQL_DATABASE
+        sync: false
+      - key: MYSQL_USER
+        sync: false
+      - key: MYSQL_PASSWORD
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        value: suporte@livesun.com.br
+      - key: BREVO_SENDER_NAME
+        value: LiveSun - Propostas
+      - key: UPLOAD_FOLDER
+        value: /app/storage/uploads
+      - key: TRUST_PROXY
+        value: "true"
