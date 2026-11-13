@@ -18,7 +18,7 @@ class DeploymentTests(unittest.TestCase):
                        SECRET_KEY='testing-production-only-key', DB_ENGINE='mysql',
                        MYSQL_HOST='127.0.0.1', MYSQL_DATABASE='testing_only',
                        MYSQL_USER='testing_only', MYSQL_PASSWORD='testing_only',
-                       UPLOAD_FOLDER=folder)
+                       UPLOAD_FOLDER=folder, CENTRAL_ENABLED='false', CENTRAL_ALLOW_LOCAL_HTTP='false')
             code = (
                 'from unittest.mock import patch; '
                 'import logging; '
@@ -41,3 +41,12 @@ class DeploymentTests(unittest.TestCase):
         self.assertIn('chown -R livesun:livesun /app/storage /home/livesun', dockerfile)
         self.assertLess(dockerfile.index('chown -R livesun:livesun /app/storage /home/livesun'),
                         dockerfile.index('USER livesun'))
+
+    def test_render_config_runs_migration_before_workers(self):
+        import runpy
+        from unittest.mock import patch, Mock
+        config = runpy.run_path(str(ROOT/'deploy/gunicorn.render.conf.py'))
+        server = Mock()
+        with patch('src.services.central_migration.before_server_start') as prepare:
+            config['on_starting'](server)
+            prepare.assert_called_once_with(server)

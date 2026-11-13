@@ -34,6 +34,9 @@ def login():
         user = matches[0] if len(matches) == 1 else None
 
         if user:
+            if current_app.config.get('CENTRAL_ENABLED'):
+                from src.services.central_client import check_subscription
+                check_subscription(user.empresa_id)
             login_user(user, remember=remember)
             flash(f'Bem-vindo, {user.nome}!', 'success')
             return redirect(url_for('dashboard.index'))

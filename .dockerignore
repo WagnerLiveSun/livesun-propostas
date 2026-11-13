@@ -13,5 +13,7 @@ sk_render.txt
 **/*.log
 uploads
 storage
+migration-snapshots
+backups
 tests
 *.pdf

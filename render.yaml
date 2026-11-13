@@ -38,3 +38,9 @@ services:
         value: /app/storage/uploads
       - key: TRUST_PROXY
         value: "true"
+      - key: CENTRAL_ENABLED
+        value: "false"
+      - key: CENTRAL_BASE_URL
+        value: https://livesun-central.onrender.com
+      - key: CENTRAL_WEBHOOK_SECRET
+        sync: false

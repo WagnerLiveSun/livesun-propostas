@@ -51,6 +51,8 @@ def create_app(config_name=None, overrides=None):
     app.config.from_object(config[config_name])
     if overrides:
         app.config.update(overrides)
+    # Integração comercial usa o ambiente efetivo, sem depender do modo debug.
+    app.config['CENTRAL_RUNTIME_ENV'] = 'development' if config_name in ('development', 'default') else config_name
     if os.getenv('TRUST_PROXY') == 'true':
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
@@ -71,6 +73,10 @@ def create_app(config_name=None, overrides=None):
     db.init_app(app)
     csrf.init_app(app)
     migrate.init_app(app, db)
+
+    # Camada independente de assinatura; preserva autenticação e RBAC do produto.
+    from src.routes.central import register_central
+    register_central(app)
 
     # Import models to register with SQLAlchemy
     from src.models import Empresa, Usuario, Cliente, ProdutoServico, Proposta, PropostaItem, EnvioEmail, Auditoria

@@ -8,3 +8,8 @@ graceful_timeout = 120
 accesslog = '-'
 errorlog = '-'
 capture_output = True
+
+
+def on_starting(server):
+    from src.services.central_migration import before_server_start
+    before_server_start(server)

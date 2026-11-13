@@ -17,7 +17,8 @@ from src.services.money import numero_por_extenso, decimal_value
 class AppTests(unittest.TestCase):
     def setUp(self):
         self.uploads = tempfile.TemporaryDirectory()
-        self.app = create_app('testing', {'UPLOAD_FOLDER': self.uploads.name})
+        self.app = create_app('testing', {'UPLOAD_FOLDER': self.uploads.name, 'CENTRAL_ENABLED': False,
+                                          'CENTRAL_ALLOW_LOCAL_HTTP': False})
         self.ctx = self.app.app_context()
         self.ctx.push()
         db.create_all()

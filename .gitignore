@@ -44,6 +44,8 @@ storage/
 *.db
 *.sqlite
 *.sqlite3
+migration-snapshots/
+backups/
 
 # Uploads
 uploads/*
