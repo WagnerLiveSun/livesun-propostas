@@ -8,6 +8,16 @@ from flask import current_app, abort
 from flask_login import current_user
 from src.extensions import db
 from src.models.central import CentralTenant
+from werkzeug.exceptions import HTTPException
+
+
+class CommercialAccessError(HTTPException):
+    """Bloqueio comercial tratado na página de atendimento do produto."""
+    code = 403
+
+    def __init__(self, description, code=403):
+        super().__init__(description=description)
+        self.code = code
 
 logger = logging.getLogger(__name__)
 STATUSES = {'TRIAL', 'ATIVA', 'SUSPENSA', 'BLOQUEADA', 'CANCELADA', 'EXPIRADA', 'EXCLUIDA'}
@@ -69,10 +79,10 @@ def store(tenant, data):
 
 def get_entitlements(empresa_id, sensitive=True):
     if not current_app.config.get('CENTRAL_ENABLED'):
-        abort(503, description='Integração comercial não configurada.')
+        raise CommercialAccessError('Integração comercial não configurada.', 503)
     tenant = db.session.get(CentralTenant, empresa_id)
     if tenant is None:
-        abort(403, description='Empresa sem vínculo comercial no Central. Contate o suporte.')
+        raise CommercialAccessError('O vínculo comercial da sua empresa ainda não foi concluído. Entre em contato com o suporte.')
     if tenant.payload and tenant.valido_ate and tenant.valido_ate > utcnow():
         return tenant.payload
     customer = tenant.central_cliente_id
@@ -82,7 +92,7 @@ def get_entitlements(empresa_id, sensitive=True):
             headers={'Authorization': 'Bearer ' + current_app.config['CENTRAL_API_TOKEN']},
             timeout=(3, 5), allow_redirects=False)
         if response.status_code in (401, 403, 404):
-            abort(403, description='Acesso comercial não autorizado pelo Central.')
+            raise CommercialAccessError('Não foi possível autorizar o acesso da sua empresa. Entre em contato com o suporte.')
         response.raise_for_status()
         data = response.json()
         validate_payload(data, customer)
@@ -91,7 +101,7 @@ def get_entitlements(empresa_id, sensitive=True):
         store(tenant, data)
         db.session.commit()
         if not tenant.valido_ate or tenant.valido_ate <= utcnow():
-            abort(503, description='Central retornou uma autorização expirada.')
+            raise CommercialAccessError('Não foi possível atualizar a autorização de acesso. Tente novamente em instantes.', 503)
         return tenant.payload
     except (requests.RequestException, ValueError, KeyError, TypeError) as error:
         db.session.rollback()
@@ -114,13 +124,13 @@ def get_entitlements(empresa_id, sensitive=True):
             if (not sensitive and current_app.config.get('CENTRAL_ALLOW_FAIL_OPEN_NON_SENSITIVE')
                     and utcnow() < deadline):
                 return tenant.payload
-        abort(503, description='Não foi possível validar a assinatura. Tente novamente ou contate o suporte.')
+        raise CommercialAccessError('Não foi possível consultar sua assinatura neste momento. Tente novamente em instantes ou fale com o suporte.', 503)
 
 
 def check_subscription(empresa_id, sensitive=True):
     data = get_entitlements(empresa_id, sensitive=sensitive)
     if data.get('status') not in ('ATIVA', 'TRIAL') or data.get('acesso_produto') is not True:
-        abort(403, description='Assinatura sem acesso ao produto. Contate o suporte comercial.')
+        raise CommercialAccessError('O acesso ao LiveSun Propostas está indisponível para sua assinatura. Fale com nossa equipe para verificar a situação e regularizar o acesso.')
     return data
 
 

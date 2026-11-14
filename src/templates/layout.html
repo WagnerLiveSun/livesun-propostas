@@ -122,7 +122,7 @@
         .alert-info { background-color: #1e3a8a !important; color: #93c5fd !important; border-color: #1e40af !important; }
     </style>
 </head>
-<body class="{{ 'has-sidebar' if current_user.is_authenticated else '' }}">
+<body class="{{ 'has-sidebar' if current_user.is_authenticated and not access_restricted else '' }}">
     <header class="topbar no-print">
         <a class="brand" href="{{ url_for('dashboard.index') }}" aria-label="LiveSun Propostas — início"><img class="developer-logo" src="{{ developer_logo_url }}" alt="LiveSun Tecnologia" width="389" height="200"><small>PROPOSTAS</small></a>
         <div class="topbar-actions">
@@ -132,7 +132,7 @@
             <button type="button" id="theme-toggle" class="btn btn-sm btn-outline-secondary">Alternar tema</button>
         </div>
     </header>
-    {% if current_user.is_authenticated %}
+    {% if current_user.is_authenticated and not access_restricted %}
     <div class="sidebar-mobile-control no-print"><button type="button" id="sidebar-toggle" class="btn btn-sm btn-outline-secondary" aria-controls="sidebar" aria-expanded="false">☰ Menu</button></div>
     <aside class="sidebar no-print" id="sidebar" aria-label="Menu lateral">
         <div class="sidebar-account"><strong>{{ current_user.empresa.nome }}</strong><small>{{ current_user.nome }} · {{ current_user.perfil }}</small></div>
@@ -148,7 +148,7 @@
     </aside>
     {% endif %}
     <div class="app-content">
-    {% if current_user.is_authenticated %}<div class="container-fluid px-lg-5 mt-3 no-print"><small>{{ current_user.empresa.nome }} · {{ current_user.perfil }}</small>
+    {% if current_user.is_authenticated and not access_restricted %}<div class="container-fluid px-lg-5 mt-3 no-print"><small>{{ current_user.empresa.nome }} · {{ current_user.perfil }}</small>
     {% for category, message in get_flashed_messages(with_categories=true) %}<div class="alert alert-{{ category }} mt-2">{{ message }}</div>{% endfor %}</div>{% endif %}
     {% block content %}{% endblock %}
     <footer class="no-print"><img class="footer-logo" src="{{ developer_logo_url }}" alt="LiveSun Tecnologia" width="389" height="200"><div>© 2026 LiveSun · Propostas Comerciais · Todos os direitos reservados.</div><div>Suporte: <a href="mailto:suporte@livesun.com.br">suporte@livesun.com.br</a></div></footer>

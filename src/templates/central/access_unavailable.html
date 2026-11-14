@@ -1,0 +1,30 @@
+{% extends 'layout.html' %}
+{% block title %}Atendimento e acesso · LiveSun Propostas{% endblock %}
+{% block content %}
+<main class="access-page" aria-labelledby="access-title">
+    <section class="card access-card">
+        <div class="card-body p-4 p-md-5">
+            <img class="login-logo" src="{{ developer_logo_url }}" alt="LiveSun Tecnologia" width="389" height="200">
+            <div class="access-status">{{ 'VERIFICAÇÃO DE ACESSO' if temporary else 'ATENDIMENTO AO CLIENTE' }}</div>
+            <h1 id="access-title">{{ 'Estamos verificando seu acesso' if temporary else 'Vamos ajudar você a retomar o acesso' }}</h1>
+            <p class="text-muted access-description">{{ message }}</p>
+            <div class="access-support">
+                <h2>Fale com a LiveSun</h2>
+                <p>Informe o nome da sua empresa e o CPF/CNPJ para agilizar o atendimento. Não envie sua senha.</p>
+                <a class="access-contact" href="mailto:suporte@livesun.com.br"><span>E-mail de suporte</span><strong>suporte@livesun.com.br</strong></a>
+                <a class="access-contact" href="tel:+5571999990204"><span>Telefone</span><strong>71 99999-0204</strong></a>
+            </div>
+            <p class="text-muted mt-4">Esta restrição não exclui suas propostas ou os dados da empresa.</p>
+            <div class="actions mt-4 justify-content-center">
+                <a class="btn btn-primary" href="{{ url_for('dashboard.index') }}">Verificar acesso novamente</a>
+                {% if current_user.is_authenticated %}
+                <form method="post" action="{{ url_for('auth.logout') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-outline-secondary">Sair da conta</button>
+                </form>
+                {% else %}<a class="btn btn-outline-secondary" href="{{ url_for('auth.login') }}">Voltar ao login</a>{% endif %}
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}

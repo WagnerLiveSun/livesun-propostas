@@ -182,6 +182,42 @@ class CentralIntegrationTests(unittest.TestCase):
                 self.assertEqual(self.send(blocked, event='evt_'+status).status_code, 200)
                 self.assertEqual(self.login().status_code, 403)
 
+    def test_blocked_access_uses_product_theme_and_support_contacts(self):
+        self.assertEqual(self.login().status_code, 302)
+        blocked = {**self.payload, 'status':'SUSPENSA', 'acesso_produto':False,
+                   'limites':{}, 'versao':2}
+        self.assertEqual(self.send(blocked).status_code, 200)
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 403)
+        html = response.get_data(as_text=True)
+        self.assertIn('Vamos ajudar você a retomar o acesso', html)
+        self.assertIn('mailto:suporte@livesun.com.br', html)
+        self.assertIn('tel:+5571999990204', html)
+        self.assertIn('71 99999-0204', html)
+        self.assertIn('ls-theme', html)
+        self.assertNotIn('<aside', html)
+        self.assertEqual(response.headers['Cache-Control'], 'no-store')
+        self.assertEqual(self.client.get('/suporte').status_code, 200)
+        self.assertEqual(self.client.post('/auth/logout').status_code, 302)
+
+    def test_temporary_failure_shows_support_and_preserves_503(self):
+        tenant = db.session.get(CentralTenant, self.company_id)
+        tenant.valido_ate = datetime.now(timezone.utc).replace(tzinfo=None)-timedelta(seconds=1)
+        db.session.commit()
+        with patch('requests.get', side_effect=requests.Timeout):
+            response = self.login()
+        self.assertEqual(response.status_code, 503)
+        self.assertIn('Estamos verificando seu acesso', response.get_data(as_text=True))
+        self.assertEqual(response.headers['Retry-After'], '60')
+
+    def test_blocked_json_request_is_not_replaced_by_html(self):
+        self.assertEqual(self.login().status_code, 302)
+        self.assertEqual(self.send({**self.payload, 'status':'SUSPENSA',
+            'acesso_produto':False, 'limites':{}, 'versao':2}).status_code, 200)
+        response = self.client.get('/', headers={'Accept':'application/json'})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json['error'], 'acesso_comercial_indisponivel')
+
     def test_different_tenant_webhook_is_rejected(self):
         data = {**self.payload, 'cliente_id': '999'}
         self.assertEqual(self.send(data).status_code, 422)

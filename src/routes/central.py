@@ -4,7 +4,7 @@ import json
 import os
 import time
 import click
-from flask import Blueprint, request, abort, current_app
+from flask import Blueprint, request, abort, current_app, render_template, jsonify
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
 from src.extensions import db, csrf
@@ -187,6 +187,21 @@ def state(cliente_id):
 
 
 def register_central(app):
+    from src.services.central_client import CommercialAccessError
+
+    @app.errorhandler(CommercialAccessError)
+    def commercial_access_error(error):
+        if request.accept_mimetypes.best == 'application/json':
+            response = jsonify(error='acesso_comercial_indisponivel', message=error.description)
+        else:
+            response = current_app.make_response(render_template('central/access_unavailable.html',
+                access_restricted=True, temporary=error.code == 503, message=error.description))
+        response.status_code = error.code
+        response.headers['Cache-Control'] = 'no-store'
+        if error.code == 503:
+            response.headers['Retry-After'] = '60'
+        return response
+
     app.config.setdefault('CENTRAL_ENABLED', os.getenv('CENTRAL_ENABLED', 'false').lower() == 'true')
     for key, default in [('CENTRAL_BASE_URL', 'https://central.livesun.com.br'), ('CENTRAL_API_TOKEN', ''),
                          ('CENTRAL_WEBHOOK_SECRET', '')]:
@@ -207,7 +222,7 @@ def register_central(app):
     @app.before_request
     def central_guard():
         if (app.config['CENTRAL_ENABLED'] and current_user.is_authenticated
-                and request.endpoint not in ('static', 'healthz', 'central.webhook', 'central.state',
+                and request.endpoint not in ('static', 'healthz', 'suporte', 'central.webhook', 'central.state',
                     'central.companies', 'central.company_detail', 'central.link_company')
                 and not (request.endpoint or '').endswith('.logout')):
             check_subscription(current_user.empresa_id)
