@@ -194,6 +194,8 @@ class CentralIntegrationTests(unittest.TestCase):
         self.assertIn('mailto:suporte@livesun.com.br', html)
         self.assertIn('tel:+5571999990204', html)
         self.assertIn('71 99999-0204', html)
+        self.assertIn('href="https://app.pipefy.com/public/form/ETeM9Gbz" target="_blank" rel="noopener noreferrer"', html)
+        self.assertIn('Entrar em contato com o suporte', html)
         self.assertIn('ls-theme', html)
         self.assertNotIn('<aside', html)
         self.assertEqual(response.headers['Cache-Control'], 'no-store')
