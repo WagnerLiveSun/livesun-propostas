@@ -75,7 +75,28 @@ def test_valid_pending_registration_and_confirmation(app, mail):
     assert CadastroPublico.query.one().token_hash is None
     assert client.post('/auth/login', data={'usuario': 'admin@example.com', 'senha': 'senha-forte-123'}).location.endswith('/cadastro/recebido')
     assert Auditoria.query.filter_by(acao='confirmar_email').count() == 1
-    assert response.headers['Referrer-Policy'] == 'no-referrer'
+    assert response.headers['Referrer-Policy'] == 'origin'
+
+
+def test_https_confirmation_csrf_origin_without_token_leak(app, mail):
+    client = app.test_client()
+    client.post('/cadastro', data=payload())
+    token = token_from(mail)
+    path = '/cadastro/confirmar/' + token
+    app.config.update(WTF_CSRF_ENABLED=True, WTF_CSRF_SSL_STRICT=True, SESSION_COOKIE_SECURE=True)
+    origin = 'https://localhost'
+    page = client.get(path, base_url=origin)
+    assert page.status_code == 200 and page.headers['Referrer-Policy'] == 'origin'
+    csrf = re.search(r'name="csrf_token" value="([^"]+)"', page.text).group(1)
+    data = {'csrf_token': csrf, 'confirmar': 'sim'}
+    assert client.post(path, data=data, base_url=origin).status_code == 400
+    assert client.post(path, data=data, base_url=origin, headers={'Referer': 'https://outro.example/'}).status_code == 400
+    assert client.post(path, data={'confirmar': 'sim'}, base_url=origin, headers={'Referer': origin + '/'}).status_code == 400
+    result = client.post(path, data=data, base_url=origin, headers={'Referer': origin + '/'})
+    assert result.status_code == 302 and result.location.endswith('/cadastro/completar')
+    assert token not in (origin + '/')
+    completion = client.get(result.location, base_url=origin)
+    assert completion.status_code == 200 and completion.headers['Referrer-Policy'] == 'origin'
 
 
 def test_valid_pj(app, mail):

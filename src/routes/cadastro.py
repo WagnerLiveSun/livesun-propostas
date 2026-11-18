@@ -82,7 +82,9 @@ def require_available():
 @cadastro_bp.after_request
 def secure_response(response):
     response.headers['Cache-Control'] = 'no-store'
-    response.headers['Referrer-Policy'] = 'no-referrer'
+    # HTTPS/CSRF exige Referer da mesma origem. Enviar apenas a origem evita
+    # vazar o token presente no caminho da confirmação (inclusive no POST).
+    response.headers['Referrer-Policy'] = 'origin'
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-Robots-Tag'] = 'noindex, nofollow'
