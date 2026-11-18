@@ -11,7 +11,7 @@ class BrevoService:
     def send_reset_password_email(self, to_email, username, reset_url):
         return self.send_transactional_email(to_email, username, 'Recuperação de senha - LiveSun Propostas',
             f'<p>Olá, {escape(username)}.</p><p><a href="{escape(reset_url)}">Redefinir senha</a></p>'
-            '<p>O link é válido por 30 minutos e pode ser usado uma única vez.</p>')
+            f'<p>O link é válido por 30 minutos e pode ser usado uma única vez.</p>')
 
     def send_transactional_email(self, to_email, to_name, subject, html_content, attachment=None, cc=None):
         key = current_app.config.get('BREVO_API_KEY')
