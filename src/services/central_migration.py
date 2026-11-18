@@ -10,6 +10,7 @@ from sqlalchemy.schema import CreateTable
 
 BASE_REVISION = 'b8215bc35a91'
 TARGET_REVISION = 'c20261112'
+COMPATIBLE_REVISIONS = {TARGET_REVISION, 'd20261118a', 'd20261118b', 'e20261118a'}
 CENTRAL_TABLES = {'central_tenants', 'central_eventos_recebidos'}
 
 
@@ -82,9 +83,9 @@ def migrate(app, snapshot_folder=None):
                 raise CentralMigrationError('Banco sem histórico Alembic/empresas. Migração automática recusada.')
             revisions = list(lock.execute(text('SELECT version_num FROM alembic_version')).scalars())
             lock.commit()
-            if revisions == [TARGET_REVISION]:
+            if len(revisions) == 1 and revisions[0] in COMPATIBLE_REVISIONS:
                 validate_schema(db.engine)
-                print(json.dumps({'event':'central_schema_ready', 'revision':TARGET_REVISION}), flush=True)
+                print(json.dumps({'event':'central_schema_ready', 'revision':revisions[0]}), flush=True)
                 return
             if revisions != [BASE_REVISION] or tables & CENTRAL_TABLES:
                 raise CentralMigrationError('Revisão inesperada ou migração parcial. Não apague tabelas; revise o histórico.')

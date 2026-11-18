@@ -1,0 +1,20 @@
+{% extends 'publico/layout.html' %}
+{% block title %}Cadastro recebido · LiveSun Propostas{% endblock %}
+{% block content %}
+<section class="section section-tint"><div class="shell narrow"><div class="signup-card">
+<span class="eyebrow">LIVESUN PROPOSTAS</span>
+<h1>Cadastro recebido</h1>
+<p>Seus dados foram recebidos e estão em análise pela equipe LiveSun.</p>
+<p>Após a análise, você receberá um e-mail com a liberação do acesso ao LiveSun Propostas.</p>
+<p>Se necessário, nossa equipe poderá entrar em contato pelo e-mail ou WhatsApp informado no cadastro.</p>
+{% if retry_visible %}
+<p class="form-note">Seu cadastro está salvo. Você pode tentar encaminhá-lo novamente{% if not retry_ready %} após o intervalo de segurança{% endif %}.</p>
+<form method="post" action="{{ url_for('cadastro.tentar_novamente') }}" class="signup-form">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<button class="button button-full" {% if not retry_ready %}disabled{% endif %}>Tentar novamente</button>
+</form>
+{% endif %}
+<p class="signup-login"><a href="{{ url_for('cadastro.recebido') }}">Atualizar acompanhamento</a> · <a href="{{ url_for('auth.login') }}">{{ 'Verificar acesso' if linked else 'Voltar ao login' }}</a></p>
+<p class="signup-login"><a href="https://app.pipefy.com/public/form/ETeM9Gbz" target="_blank" rel="noopener noreferrer">Falar com o suporte LiveSun</a></p>
+</div></div></section>
+{% endblock %}

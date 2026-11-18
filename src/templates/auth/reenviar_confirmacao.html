@@ -1,0 +1,8 @@
+{% extends 'publico/layout.html' %}
+{% block title %}Novo link de confirmação · LiveSun Propostas{% endblock %}
+{% block content %}<section class="section section-tint"><div class="shell narrow"><div class="signup-card">
+<h1>Solicitar novo link</h1><p>Informe o e-mail do administrador. Se houver um cadastro pendente elegível, enviaremos instruções. O link anterior será invalidado.</p>
+<form method="post" class="signup-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div hidden aria-hidden="true"><input name="website" tabindex="-1" autocomplete="off" aria-label="Não preencher"></div>
+<div class="field"><label for="email">E-mail do administrador</label><input type="email" id="email" name="email" maxlength="120" autocomplete="email" required></div>
+<button class="button">Enviar instruções</button></form><p class="signup-login"><a href="{{ url_for('auth.login') }}">Voltar ao login</a></p>
+</div></div></section>{% endblock %}

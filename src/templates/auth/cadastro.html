@@ -1,0 +1,3 @@
+{% extends 'publico/layout.html' %}
+{% block title %}Crie sua conta · LiveSun Propostas{% endblock %}
+{% block content %}<section class="section signup-section signup-standalone"><div class="shell signup-grid"><div class="signup-copy"><span class="eyebrow">BEM-VINDO À LIVESUN</span><h1>Seu próximo negócio merece uma <em>boa proposta.</em></h1><p>Comece com seus dados básicos. Confirme seu e-mail e complete o cadastro com segurança.</p><p class="signup-reassurance">O acesso ao teste depende da análise e liberação da equipe LiveSun. Nenhuma cobrança é iniciada pelo cadastro.</p><a class="button button-light" href="{{ url_for('publico.landing') }}#demonstracao">Conhecer o sistema</a></div>{% include 'publico/_cadastro.html' %}</div></section>{% endblock %}

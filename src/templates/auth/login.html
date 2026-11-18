@@ -48,10 +48,13 @@
                         <button type="submit" class="btn btn-primary w-100">Entrar</button>
                     </form>
 
-                    <div class="text-center mt-3">
-                        <a href="{{ url_for('auth.forgot_password') }}" class="text-decoration-none">
-                            <i class="fas fa-key me-1"></i>Esqueci a senha
-                        </a>
+                    <div class="login-help">
+                        <a class="login-recovery" href="{{ url_for('auth.forgot_password') }}">Esqueci minha senha</a>
+                        <div class="login-discover">
+                            <p>Ainda não conhece o sistema?</p>
+                            <a class="login-explore" href="{{ url_for('publico.landing') }}">Conheça o LiveSun Propostas <span aria-hidden="true">→</span></a>
+                            {% if config.PUBLIC_REGISTRATION_ENABLED or config.PUBLIC_REGISTRATION_PREVIEW %}<a class="login-signup" href="{{ url_for('cadastro.index') }}">{{ 'Visualizar cadastro' if config.PUBLIC_REGISTRATION_PREVIEW else 'Criar minha conta' }}</a>{% endif %}
+                        </div>
                     </div>
                 </div>
             </div>

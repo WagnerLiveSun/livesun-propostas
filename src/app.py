@@ -4,7 +4,7 @@ import sys
 import hashlib
 from pathlib import Path
 from dotenv import load_dotenv
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template, redirect, url_for, request, abort
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Load environment variables
@@ -14,7 +14,7 @@ load_dotenv()
 from config.config import config
 
 # Import extensions
-from src.extensions import db, login_manager, csrf, migrate
+from src.extensions import db, login_manager, csrf, migrate, limiter
 
 # Setup logging
 logging.basicConfig(
@@ -71,10 +71,27 @@ def create_app(config_name=None, overrides=None):
     )
 
     db.init_app(app)
+    @app.before_request
+    def bound_registration_payload():
+        # Antes de CSRF e limiter, que acessam request.form.
+        if request.path == '/cadastro' or request.path.startswith('/cadastro/'):
+            tracking_path = request.path in ('/cadastro/recebido', '/cadastro/tentar-novamente')
+            if not tracking_path and not app.config['PUBLIC_REGISTRATION_ENABLED'] and not (
+                    app.config.get('PUBLIC_REGISTRATION_PREVIEW') and config_name in ('development', 'default')):
+                abort(404)
+            if request.method == 'POST':
+                if request.mimetype != 'application/x-www-form-urlencoded':
+                    abort(415)
+                if request.content_length is None or request.content_length > 16384:
+                    abort(413)
+
     csrf.init_app(app)
     migrate.init_app(app, db)
+    limiter.init_app(app)
 
     # Camada independente de assinatura; preserva autenticação e RBAC do produto.
+    from src.services.cadastro_central import install_provisioning_guard
+    install_provisioning_guard(app)
     from src.routes.central import register_central
     register_central(app)
 
@@ -103,6 +120,11 @@ def create_app(config_name=None, overrides=None):
     from src.routes.auth import auth_bp
     from src.routes.dashboard import dashboard_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
+    from src.routes.cadastro import cadastro_bp, validate_registration_config
+    validate_registration_config(app)
+    app.register_blueprint(cadastro_bp)
+    from src.routes.publico import publico_bp
+    app.register_blueprint(publico_bp)
     app.register_blueprint(dashboard_bp)
     from src.routes.gestao import gestao_bp
     from src.routes.propostas import propostas_bp
@@ -129,8 +151,14 @@ def create_app(config_name=None, overrides=None):
         version = hashlib.sha256(logo.read_bytes()).hexdigest()[:16]
         stylesheet = Path(app.static_folder) / 'css' / 'style.css'
         css_version = hashlib.sha256(stylesheet.read_bytes()).hexdigest()[:16]
+        legal_name_pending = False
+        from flask_login import current_user
+        if current_user.is_authenticated:
+            legal_name_pending = (current_user.empresa.razao_social_pendente
+                                  and not (current_user.empresa.razao_social or '').strip())
         return {'developer_logo_url': url_for('static', filename='images/logo.png', v=version),
-                'stylesheet_url': url_for('static', filename='css/style.css', v=css_version)}
+                'stylesheet_url': url_for('static', filename='css/style.css', v=css_version),
+                'legal_name_pending': legal_name_pending}
 
     @app.route('/suporte')
     def suporte():

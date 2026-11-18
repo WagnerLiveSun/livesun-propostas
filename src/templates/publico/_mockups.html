@@ -1,0 +1,18 @@
+{% macro panel() %}
+<div class="app-mock" role="img" aria-label="Demonstração ilustrativa da lista de propostas: indicadores e negociações com status pendente, aceita e enviada.">
+<div class="mock-browser"><span></span><span></span><span></span><small>LiveSun Propostas · demonstração</small></div>
+<div class="mock-workspace"><aside class="mock-sidebar"><b>LS<span>PROPOSTAS</span></b><span>▦ Visão geral</span><span class="selected">▤ Propostas</span><span>♧ Clientes</span><span>▱ Produtos e serviços</span><span>⚙ Empresa</span><div class="mock-sidebar-bottom">Tudo no seu lugar.</div></aside>
+<div class="mock-main"><div class="mock-top"><div><small>SEU NEGÓCIO, MAIS ORGANIZADO</small><h3>Suas propostas</h3></div><span class="mock-new">+ Nova proposta</span></div>
+<div class="mock-metrics"><div><span>Total proposto</span><strong>R$ 18.450</strong><small>nas propostas do exemplo</small></div><div><span>Propostas aceitas</span><strong>R$ 8.200</strong><small>negociações organizadas</small></div><div><span>Em acompanhamento</span><strong>06</strong><small>cada oportunidade importa</small></div></div>
+<div class="mock-list"><div class="mock-table-head"><b>Propostas recentes</b><span>Todos os status ▾</span></div>{% for number, client, value, status, tone in [('001','Aurora Design','3.450,00','Pendente','amber'),('002','Horizonte Studio','5.200,00','Aceita','green'),('003','Ateliê Jardim','2.800,00','Enviada','blue'),('004','Oficina Norte','3.000,00','Aceita','green')] %}<div class="mock-row"><span><b>#{{ number }}</b><small>{{ client }}</small></span><span>R$ {{ value }}</span><span class="badge badge-{{ tone }}">{{ status }}</span></div>{% endfor %}</div>
+<div class="mock-caption">Dados fictícios · status registrados pela equipe</div></div></div></div>
+{% endmacro %}
+{% macro document() %}
+<article class="proposal-preview" aria-label="Proposta comercial ilustrativa, inspirada no PDF fornecido, com dados fictícios">
+<div class="proposal-letterhead"><div><span class="document-tag">PROPOSTA COMERCIAL</span><h3>Sunset · exemplo</h3><p>Serviços e soluções para sua empresa<br><span>contato@example.com · (00) 00000-0000</span></p></div><img src="{{ url_for('static', filename='images/demo-proposta-logo.png') }}" width="222" height="223" alt="Logo Sunset preservado da proposta de referência" loading="lazy" decoding="async"></div>
+<div class="proposal-number"><b>Orçamento #DEMO-024</b><span>Validade: 15 dias</span></div>
+<div class="proposal-client"><small>PREPARADO PARA</small><strong>Horizonte Studio · empresa fictícia</strong><span>Responsável: Marina Exemplo</span><span>Documento e endereço omitidos</span></div>
+<table><caption class="sr-only">Itens e valores fictícios da proposta</caption><thead><tr><th scope="col">Descrição</th><th scope="col">Qtd.</th><th scope="col">Total</th></tr></thead><tbody><tr><td>Consultoria e planejamento</td><td>1</td><td>R$ 1.800,00</td></tr><tr><td>Implantação e treinamento</td><td>2</td><td>R$ 1.800,00</td></tr></tbody></table>
+<div class="proposal-total"><span>Subtotal <b>R$ 3.600,00</b></span><span>Desconto <b>R$ 150,00</b></span><strong>Total da proposta <b>R$ 3.450,00</b></strong></div>
+<h4>Condição de pagamento</h4><p>50% na aprovação e 50% na conclusão do serviço.</p><h4>Observações</h4><p>Escopo e prazos sujeitos à confirmação entre as partes.</p><div class="document-watermark">EXEMPLO ILUSTRATIVO · DADOS FICTÍCIOS</div></article>
+{% endmacro %}

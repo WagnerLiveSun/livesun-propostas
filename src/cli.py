@@ -1,4 +1,5 @@
 import click
+from sqlalchemy.exc import IntegrityError
 from src.extensions import db
 from src.models import Empresa, Usuario
 
@@ -23,5 +24,9 @@ def register_commands(app):
                        usuario=usuario.strip(), perfil='admin')
         user.set_password(senha)
         db.session.add(user)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            raise click.ClickException('Não foi possível criar: identidade já cadastrada ou vínculo inválido.') from None
         click.echo('Empresa e administrador criados com sucesso.')

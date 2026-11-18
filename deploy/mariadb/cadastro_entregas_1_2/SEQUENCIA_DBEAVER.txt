@@ -1,0 +1,30 @@
+BANCO: u951548013_propostas | MariaDB 11.8.9 | revisao inicial c20261112
+
+Objetivo: mesma estrutura das Entregas 1 e 2, adaptada para MariaDB.
+NAO usar os scripts da pasta deploy/mysql neste servidor.
+
+1. Fazer backup. Nao deixar o aplicativo gravando durante a atualizacao.
+2. Executar 00_DIAGNOSTICO_SOMENTE_LEITURA.sql corrigido.
+   Duplicidades, emails ausentes/especiais e documentos longos devem ser zero.
+3. Abrir 02_CADASTRO_d20261118a.sql.
+   Alterar @ls_backup_confirmado = 0 para = 1 depois do backup.
+   Executar o arquivo completo no DBeaver (Executar script SQL / Alt+X).
+4. Abrir 03_UNICIDADE_d20261118b.sql.
+   Alterar @ls_backup_confirmado = 0 para = 1.
+   Alterar @ls_unicidade_aprovada = 0 para = 1 apos diagnostico sem conflitos.
+   Executar o arquivo completo.
+5. Abrir 04_SOLICITACAO_CENTRAL_e20261118a.sql.
+   Alterar @ls_backup_confirmado = 0 para = 1.
+   Executar o arquivo completo.
+6. Executar 05_VERIFICACAO_FINAL.sql. Revisao esperada: e20261118a.
+
+O nome do banco ja esta preenchido. Pular 01: a revisao c20261112 ja existe.
+Em erro, parar; nao ignorar, nao executar o proximo e nao alterar Alembic manualmente.
+Os scripts exigem permissoes de procedures (CREATE ROUTINE) e ALTER/CREATE TABLE.
+DELIMITER deve ser interpretado pelo editor MySQL/MariaDB do DBeaver.
+Nao apagam nem unem registros. Atualizam identidades normalizadas e estrutura.
+Nao acessam Central/Comercial, nao enviam email e nao criam trial/assinatura.
+
+Validacao: exportacao a partir das migrations e teste automatizado da variante.
+A cadeia MySQL foi executada em MySQL 8.0.31 local. Nao ha servidor MariaDB local
+para executar esta variante; nao foi executada em producao pelo assistente.

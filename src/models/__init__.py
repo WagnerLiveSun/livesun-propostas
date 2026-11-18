@@ -9,6 +9,11 @@ from src.models.proposta import Proposta
 from src.models.proposta_item import PropostaItem
 from src.models.envio_email import EnvioEmail
 from src.models.auditoria import Auditoria
+from src.models.cadastro_publico import CadastroPublico, TentativaConfirmacaoEmail
+from src.models.solicitacao_central import SolicitacaoCentral
+from src.services.identidades import register_identity_events
+
+register_identity_events(Empresa, Usuario)
 
 __all__ = [
     'db',

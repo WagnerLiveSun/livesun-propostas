@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light">
+  <title>{% block title %}LiveSun Propostas · Propostas profissionais, do seu jeito{% endblock %}</title>
+  <meta name="description" content="Crie propostas comerciais com a marca da sua empresa, gere PDFs, envie por e-mail e organize suas negociações. Conheça o LiveSun Propostas.">
+  {% block seo %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+  <meta property="og:type" content="website"><meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="LiveSun Propostas · Propostas comerciais profissionais em minutos">
+  <meta property="og:description" content="Menos planilhas. Mais organização para criar, enviar e acompanhar suas propostas comerciais.">
+  <meta property="og:image" content="{{ config.PUBLIC_BASE_URL }}/static/images/logo.png">
+  <link rel="icon" type="image/png" href="{{ developer_logo_url }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css', v='3') }}">
+  <script src="{{ url_for('static', filename='js/landing.js', v='3') }}" defer></script>
+</head>
+<body class="sales-page"><a class="skip-link" href="#conteudo">Pular para o conteúdo</a>
+<header class="sales-header"><div class="shell nav-wrap">
+  <a class="sales-brand" href="{{ url_for('publico.landing') }}" aria-label="LiveSun Propostas — início"><img src="{{ developer_logo_url }}" width="389" height="200" alt="LiveSun Tecnologia"><span>PROPOSTAS</span></a>
+  <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="sales-nav" hidden><span aria-hidden="true">☰</span> Menu</button>
+  <nav class="sales-nav" id="sales-nav" aria-label="Navegação principal"><a href="{{ url_for('publico.landing') }}#recursos">Recursos</a><a href="{{ url_for('publico.landing') }}#como-funciona">Como funciona</a><a href="https://app.pipefy.com/public/form/ETeM9Gbz" target="_blank" rel="noopener noreferrer">Suporte<span class="sr-only"> (nova aba)</span></a><a class="nav-login" href="{{ url_for('auth.login') }}">Entrar <span aria-hidden="true">↗</span></a><a class="button button-small" href="{{ url_for('publico.landing') }}#cadastro">Quero testar o LiveSun Propostas</a></nav>
+</div></header>
+<main id="conteudo">{% block content %}{% endblock %}</main>
+<footer class="sales-footer"><div class="shell footer-grid">
+  <div><a class="sales-brand" href="{{ url_for('publico.landing') }}"><img src="{{ developer_logo_url }}" width="389" height="200" alt="LiveSun Tecnologia"><span>PROPOSTAS</span></a><p>Organização em cada proposta.<br>Profissionalismo em cada oportunidade.</p></div>
+  <nav aria-label="Links do rodapé"><a href="{{ url_for('publico.landing') }}#recursos">Recursos</a><a href="{{ url_for('publico.landing') }}#como-funciona">Como funciona</a><a href="https://app.pipefy.com/public/form/ETeM9Gbz" target="_blank" rel="noopener noreferrer">Suporte<span class="sr-only"> (nova aba)</span></a><a href="{{ url_for('auth.login') }}">Entrar no sistema</a></nav>
+  <div><strong>Conte com a LiveSun</strong><a href="mailto:suporte@livesun.com.br">suporte@livesun.com.br</a>{% if config.TERMS_URL %}<a href="{{ config.TERMS_URL }}" target="_blank" rel="noopener noreferrer">Termos de Uso <span class="sr-only">(nova aba)</span></a>{% endif %}{% if config.PRIVACY_URL %}<a href="{{ config.PRIVACY_URL }}" target="_blank" rel="noopener noreferrer">Política de Privacidade / LGPD <span class="sr-only">(nova aba)</span></a>{% endif %}</div>
+  </div><div class="shell footer-bottom">© {{ public_year|default(2026) }} LiveSun Tecnologia. Todos os direitos reservados.</div>
+</footer></body></html>

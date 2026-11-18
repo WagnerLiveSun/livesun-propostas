@@ -1,0 +1,8 @@
+{% extends 'publico/layout.html' %}
+{% block title %}Complete seu cadastro · LiveSun Propostas{% endblock %}
+{% block content %}<section class="section section-tint"><div class="shell narrow"><div class="signup-card">
+<span class="eyebrow">E-MAIL CONFIRMADO</span><h1>Falta pouco para concluir</h1><p>Defina sua senha. Depois, nossa equipe analisará o cadastro para liberar o período de teste.</p>
+{% if error %}<div class="form-error" role="alert">{{ error }}</div>{% endif %}
+<form method="post" class="signup-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{% for field,label in [('senha','Sua senha'),('confirmar_senha','Confirme a senha')] %}<div class="field"><label for="{{ field }}">{{ label }}</label><input id="{{ field }}" name="{{ field }}" type="password" minlength="8" maxlength="128" autocomplete="new-password" required></div>{% endfor %}
+<p class="form-note">Use de 8 a 128 caracteres. Sua autorização para esta etapa dura 15 minutos. Concluir não ativa o acesso comercial automaticamente.</p><button class="button button-full">Concluir cadastro</button></form></div></div></section>{% endblock %}

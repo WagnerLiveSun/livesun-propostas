@@ -18,7 +18,8 @@ class DeploymentTests(unittest.TestCase):
                        SECRET_KEY='testing-production-only-key', DB_ENGINE='mysql',
                        MYSQL_HOST='127.0.0.1', MYSQL_DATABASE='testing_only',
                        MYSQL_USER='testing_only', MYSQL_PASSWORD='testing_only',
-                       UPLOAD_FOLDER=folder, CENTRAL_ENABLED='false', CENTRAL_ALLOW_LOCAL_HTTP='false')
+                       UPLOAD_FOLDER=folder, CENTRAL_ENABLED='false', CENTRAL_ALLOW_LOCAL_HTTP='false',
+                       PUBLIC_REGISTRATION_PREVIEW='false', PUBLIC_REGISTRATION_ENABLED='false')
             code = (
                 'from unittest.mock import patch; '
                 'import logging; '

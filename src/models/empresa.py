@@ -9,11 +9,14 @@ def _utcnow():
 
 class Empresa(db.Model):
     __tablename__ = 'empresas'
+    __table_args__ = (db.UniqueConstraint('documento_normalizado', name='uq_empresas_documento_normalizado'),)
 
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(150), nullable=False)
     razao_social = db.Column(db.String(150))
+    razao_social_pendente = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
     cnpj_cpf = db.Column(db.String(18))
+    documento_normalizado = db.Column(db.String(14))
     endereco = db.Column(db.String(255))
     telefone = db.Column(db.String(20))
     email = db.Column(db.String(120))

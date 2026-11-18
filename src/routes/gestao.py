@@ -95,6 +95,8 @@ def empresa():
             text_fields(obj, fields)
             if not obj.nome:
                 raise ValueError('Nome da empresa é obrigatório.')
+            if obj.razao_social_pendente and (obj.razao_social or '').strip():
+                obj.razao_social_pendente = False
             upload = request.files.get('logo')
             if upload and upload.filename:
                 with Image.open(upload.stream) as image:
@@ -116,7 +118,7 @@ def empresa():
             db.session.commit()
             flash('Empresa atualizada.', 'success')
             return redirect(url_for('gestao.empresa'))
-        except (ValueError, UnidentifiedImageError, OSError, Image.DecompressionBombError) as error:
+        except (ValueError, IntegrityError, UnidentifiedImageError, OSError, Image.DecompressionBombError) as error:
             db.session.rollback()
             flash('Não foi possível salvar a empresa. Verifique os campos e a imagem.', 'danger')
     if obj.logo and not company_logo_bytes(obj):

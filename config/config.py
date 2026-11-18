@@ -71,6 +71,22 @@ class Config:
     PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', 'http://127.0.0.1:5000').rstrip('/')
     PDF_BROWSER_PATH = os.environ.get('PDF_BROWSER_PATH', '')
 
+    # Cadastro fica fechado até revisão dos dados e migrations explícitas.
+    PUBLIC_REGISTRATION_ENABLED = os.getenv('PUBLIC_REGISTRATION_ENABLED', 'false').lower() == 'true'
+    PUBLIC_REGISTRATION_PREVIEW = os.getenv('PUBLIC_REGISTRATION_PREVIEW', 'false').lower() == 'true'
+    PUBLIC_REGISTRATION_DATA_REVIEWED = os.getenv('PUBLIC_REGISTRATION_DATA_REVIEWED', 'false').lower() == 'true'
+    EMAIL_CONFIRMATION_TTL_MINUTES = int(os.getenv('EMAIL_CONFIRMATION_TTL_MINUTES', '60'))
+    CONFIRMATION_RESEND_COOLDOWN_SECONDS = int(os.getenv('CONFIRMATION_RESEND_COOLDOWN_SECONDS', '120'))
+    PUBLIC_REGISTRATION_RATE_LIMIT = os.getenv('PUBLIC_REGISTRATION_RATE_LIMIT', '5 per hour')
+    REGISTRATION_IDENTITY_RATE_LIMIT = os.getenv('REGISTRATION_IDENTITY_RATE_LIMIT', '3 per hour')
+    CONFIRMATION_RESEND_RATE_LIMIT = os.getenv('CONFIRMATION_RESEND_RATE_LIMIT', '5 per hour')
+    RATELIMIT_STORAGE_URI = os.getenv('RATELIMIT_STORAGE_URI', 'memory://')
+    TERMS_URL = os.getenv('TERMS_URL', '')
+    PRIVACY_URL = os.getenv('PRIVACY_URL', '')
+    TERMS_VERSION = os.getenv('TERMS_VERSION', '')
+    PRIVACY_VERSION = os.getenv('PRIVACY_VERSION', '')
+    CENTRAL_REGISTRATION_RETRY_SECONDS = int(os.getenv('CENTRAL_REGISTRATION_RETRY_SECONDS', '120'))
+
 
 class DevelopmentConfig(Config):
     """Development configuration"""
@@ -89,6 +105,7 @@ class ProductionConfig(Config):
 class TestingConfig(Config):
     """Testing configuration"""
     TESTING = True
+    PUBLIC_REGISTRATION_PREVIEW = False
     SECRET_KEY = 'testing-only-key'
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'

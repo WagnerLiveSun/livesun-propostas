@@ -377,8 +377,11 @@ class AppTests(unittest.TestCase):
         p = self.create_proposal()
         self.assertTrue(self.client.get(f'/propostas/{p.id}/pdf').data.startswith(b'%PDF'))
 
-    def test_user_limit_and_email_scope(self):
+    def test_user_limit_and_global_email_uniqueness(self):
         data = {'nome':'Novo','usuario':'novo','email':'other@example.com','senha':'senha1234','perfil':'operador'}
+        self.client.post('/usuarios',data=data)
+        self.assertEqual(Usuario.query.filter_by(empresa_id=self.company).count(), 2)
+        data['email']='novo@example.com'
         self.client.post('/usuarios',data=data)
         self.assertEqual(Usuario.query.filter_by(empresa_id=self.company).count(), 3)
         data['usuario']='quarto'

@@ -34,6 +34,14 @@ def login():
         user = matches[0] if len(matches) == 1 else None
 
         if user:
+            from src.services.cadastro_central import registration_for_company, pending_provisioning, authorize_tracking
+            registration = registration_for_company(user.empresa_id)
+            if registration is not None and pending_provisioning(user.empresa_id):
+                if registration.status == 'PRONTO_ANALISE':
+                    authorize_tracking(registration, user)
+                    return redirect(url_for('cadastro.recebido'))
+                flash('Seu cadastro ainda não foi concluído. Confirme seu e-mail e conclua a definição de senha.', 'info')
+                return render_template('auth/login.html')
             if current_app.config.get('CENTRAL_ENABLED'):
                 from src.services.central_client import check_subscription
                 check_subscription(user.empresa_id)

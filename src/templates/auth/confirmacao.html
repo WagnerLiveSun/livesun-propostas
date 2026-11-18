@@ -1,0 +1,8 @@
+{% extends 'publico/layout.html' %}
+{% block title %}Confirmação de e-mail · LiveSun Propostas{% endblock %}
+{% block content %}<section class="section section-tint"><div class="shell narrow"><div class="signup-card">
+<h1>Confirmação de e-mail</h1>
+{% if confirmar %}<p>Confirme seu endereço de e-mail para definir sua senha e completar o cadastro no LiveSun Propostas.</p><form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button" name="confirmar" value="sim">Confirmar meu e-mail</button></form>
+{% else %}<p role="status">{{ message }}</p>{% endif %}
+<div><a href="{{ url_for('cadastro.reenviar') }}">Solicitar novo link</a> · <a href="{{ url_for('auth.login') }}">Voltar ao login</a></div>
+</div></div></section>{% endblock %}

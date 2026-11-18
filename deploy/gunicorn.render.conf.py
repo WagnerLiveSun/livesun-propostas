@@ -5,7 +5,8 @@ workers = 1
 threads = 2
 timeout = 120
 graceful_timeout = 120
-accesslog = '-'
+# Não registrar paths de confirmação/recuperação contendo tokens.
+accesslog = None
 errorlog = '-'
 capture_output = True
 

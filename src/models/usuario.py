@@ -10,12 +10,14 @@ def _utcnow():
 
 class Usuario(UserMixin, db.Model):
     __tablename__ = 'usuarios'
-    __table_args__ = (db.UniqueConstraint('empresa_id', 'email', name='uq_usuario_empresa_email'),)
+    __table_args__ = (db.UniqueConstraint('empresa_id', 'email', name='uq_usuario_empresa_email'),
+                      db.UniqueConstraint('email_normalizado', name='uq_usuarios_email_normalizado'))
 
     id = db.Column(db.Integer, primary_key=True)
     empresa_id = db.Column(db.Integer, db.ForeignKey('empresas.id'), nullable=False, index=True)
     nome = db.Column(db.String(150), nullable=False)
     email = db.Column(db.String(120), nullable=False, index=True)
+    email_normalizado = db.Column(db.String(120))
     usuario = db.Column(db.String(80), unique=True, nullable=False, index=True)
     senha_hash = db.Column(db.String(255), nullable=False)
     perfil = db.Column(db.String(20), default='visualizador')  # 'admin', 'operador', 'visualizador'
