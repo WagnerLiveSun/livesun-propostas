@@ -3,6 +3,7 @@ Rotas de autenticação: login, logout, recuperação de senha.
 """
 import secrets
 import hashlib
+import logging
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app
 from flask_login import login_user, logout_user, login_required, current_user
@@ -10,6 +11,8 @@ from src.extensions import db
 from src.models.usuario import Usuario
 from src.services.brevo import brevo_service
 from src.core.security import audit
+
+logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -76,6 +79,7 @@ def forgot_password():
             user.reset_expira_em = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=30)
             db.session.commit()
             reset_url = current_app.config['PUBLIC_BASE_URL'] + url_for('auth.reset_password', token=token)
+            logger.info('Enviando email de reset para %s, URL: %s', email, reset_url)
             brevo_service.send_reset_password_email(email, user.nome, reset_url)
         flash('Se o e-mail estiver cadastrado, você receberá instruções.', 'info')
 
