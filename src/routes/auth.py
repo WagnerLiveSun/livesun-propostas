@@ -79,7 +79,7 @@ def forgot_password():
             user.reset_expira_em = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=30)
             db.session.commit()
             reset_url = current_app.config['PUBLIC_BASE_URL'] + url_for('auth.reset_password', token=token)
-            logger.info('Enviando email de reset para %s, URL: %s', email, reset_url)
+            logger.warning('Enviando email de reset para %s, URL: %s', email, reset_url)
             brevo_service.send_reset_password_email(email, user.nome, reset_url)
         flash('Se o e-mail estiver cadastrado, você receberá instruções.', 'info')
 
