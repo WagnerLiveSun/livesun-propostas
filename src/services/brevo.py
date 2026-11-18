@@ -28,15 +28,13 @@ class BrevoService:
             payload['attachment'] = [{'name': attachment['name'],
                                      'content': base64.b64encode(attachment['content']).decode('ascii')}]
         try:
-            logger.warning('Enviando email via Brevo para: %s, assunto: %s', to_email, subject)
             response = requests.post('https://api.brevo.com/v3/smtp/email',
                 headers={'api-key': key, 'accept': 'application/json'}, json=payload, timeout=30)
-            logger.warning('Resposta Brevo - Status: %s, Body: %s', response.status_code, response.text)
             if response.status_code != 201:
                 logger.warning('Brevo recusou o envio (HTTP %s).', response.status_code)
             return response.status_code == 201
-        except requests.RequestException as e:
-            logger.warning('Falha de comunicação com o Brevo: %s', str(e))
+        except requests.RequestException:
+            logger.warning('Falha de comunicação com o Brevo.')
             return False
 
 
