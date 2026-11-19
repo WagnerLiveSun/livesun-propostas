@@ -2,7 +2,7 @@
 from datetime import date, datetime, time, timedelta, timezone
 from urllib.parse import urlsplit
 import requests
-from flask import current_app, g
+from flask import current_app, g, url_for
 from src.extensions import db
 from src.models import Empresa, Proposta, Auditoria
 from src.models.central import CentralTenant
@@ -11,7 +11,7 @@ from src.services.central_client import (CommercialAccessError, get_entitlements
                                          validate_payload, store, utcnow)
 
 LIMIT = 10
-READ_ONLY = {'SUSPENSA', 'BLOQUEADA', 'CANCELADA', 'EXPIRADA'}
+READ_ONLY = {'SUSPENSA', 'BLOQUEADA', 'CANCELADA', 'EXPIRADA', 'PAGO_AGUARDANDO_LIBERACAO'}
 READ_ENDPOINTS = {'propostas.index', 'propostas.detalhe', 'propostas.pdf'}
 TRIAL_EXPIRED = 'Seu período de teste expirou. Contrate o LiveSun Propostas para continuar criando e enviando propostas.'
 QUOTA_REACHED = 'Você atingiu o limite de 10 propostas do período de teste. Contrate o LiveSun Propostas para continuar criando propostas.'
@@ -28,6 +28,13 @@ def checkout_url():
     if parsed.scheme == 'https' and parsed.hostname and not parsed.username and not parsed.password and not parsed.fragment:
         return value
     return None
+
+
+def checkout_url_for_company(company_id):
+    tenant = db.session.get(CentralTenant, company_id)
+    if tenant is None:
+        return None
+    return url_for('central.contract')
 
 
 def details(company_id, payload):
@@ -50,7 +57,7 @@ def details(company_id, payload):
         validate_payload(effective, customer)
         if (type(data['id']) is not int or data['id'] != subscription_id
                 or type(data['cliente_id']) is not int or data['cliente_id'] != customer
-                or effective.get('plano') != 'PROPOSTAS' or effective['assinatura_id'] != subscription_id
+                or effective.get('plano') not in ('PROPOSTAS', 'PROPOSTAS_MENSAL', 'PROPOSTAS_ANUAL') or effective['assinatura_id'] != subscription_id
                 or data['versao'] != effective['versao'] or data['status'] != effective['status']
                 or data['versao'] < payload['versao']):
             raise ValueError()
@@ -126,7 +133,7 @@ def state(company_id):
     return {'status': payload['status'], 'restricted': restricted, 'expired': expired,
         'can_create': not restricted and (payload['status'] != 'TRIAL' or used < LIMIT),
         'usage': usage, 'used': used, 'limit': LIMIT, 'near': near,
-        'checkout': checkout_url() if (expired or near or (payload['status'] == 'TRIAL' and used >= LIMIT)
+        'checkout': checkout_url_for_company(company_id) if (expired or near or (payload['status'] == 'TRIAL' and used >= LIMIT)
             or (payload['status'] == 'SUSPENSA' and usage and usage.suspensa_inadimplencia)
             or payload['status'] == 'EXPIRADA') else None,
         'message': TRIAL_EXPIRED if expired else QUOTA_REACHED if payload['status'] == 'TRIAL' and used >= LIMIT

@@ -54,6 +54,31 @@ class CentralIntegrationTests(unittest.TestCase):
     def login(self):
         return self.client.post('/auth/login', data={'usuario': 'test', 'senha': 'password123'})
 
+    def test_checkout_uses_authenticated_tenant_not_query_id(self):
+        import base64
+        from urllib.parse import urlsplit, parse_qs
+        self.assertEqual(self.login().status_code, 302)
+        response = self.client.get('/central/contratar?cliente_id=999')
+        self.assertEqual(response.status_code, 302)
+        target = urlsplit(response.location)
+        self.assertEqual(target.hostname, 'central.example.com')
+        self.assertEqual(target.path, '/contratar/propostas')
+        encoded, signature = parse_qs(target.query)['token'][0].split('.')
+        data = json.loads(base64.urlsafe_b64decode(encoded + '='*(-len(encoded)%4)))
+        self.assertEqual(data['cliente_id'], 123)
+        expected = hmac.new(('h'*40).encode(), ('checkout-propostas:'+encoded).encode(), hashlib.sha256).hexdigest()
+        self.assertTrue(hmac.compare_digest(signature, expected))
+
+    def test_checkout_anonymous_denied(self):
+        response = self.client.get('/central/contratar')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/auth/login', response.location)
+
+    def test_paid_pending_webhook_does_not_activate_access(self):
+        pending = {**self.payload, 'status': 'PAGO_AGUARDANDO_LIBERACAO', 'acesso_produto': False, 'versao': 2}
+        self.assertEqual(self.send(pending, event='evt_paid', event_type='ASSINATURA_PAGO_AGUARDANDO_LIBERACAO').status_code, 200)
+        self.assertFalse(db.session.get(CentralTenant, self.company_id).payload['acesso_produto'])
+
     def signed_request(self, method, path, data=None):
         raw = json.dumps(data).encode() if data is not None else path.encode()
         stamp = str(int(time.time()))
@@ -107,9 +132,9 @@ class CentralIntegrationTests(unittest.TestCase):
             'X-LiveSun-Timestamp':stamp, 'X-LiveSun-Signature':'sha256='+signature})
         self.assertEqual(response.status_code, 401)
 
-    def send(self, payload=None, event='evt_test', stamp=None, signature=None):
+    def send(self, payload=None, event='evt_test', stamp=None, signature=None, event_type='ASSINATURA_SUSPENSA'):
         entitlement = payload or self.payload
-        data = {'evento': 'ASSINATURA_SUSPENSA', 'evento_id': event, 'cliente_id': '123',
+        data = {'evento': event_type, 'evento_id': event, 'cliente_id': '123',
             'produto': 'PROPOSTAS', 'assinatura_id': entitlement['assinatura_id'],
             'versao': entitlement['versao'], 'status_novo': entitlement['status'], 'entitlements': entitlement}
         raw = json.dumps(data).encode()

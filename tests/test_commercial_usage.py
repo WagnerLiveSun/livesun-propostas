@@ -312,4 +312,5 @@ def test_suspended_inadimplencia_shows_safe_checkout(commercial_app):
     db.session.commit()
     html = client.get('/propostas/').text
     assert 'Contratar agora' in html
-    assert 'https://central.example.com/contratar' in html
+    assert '/central/contratar' in html
+    assert '?cliente=' not in html

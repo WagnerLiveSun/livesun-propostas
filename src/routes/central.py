@@ -4,8 +4,8 @@ import json
 import os
 import time
 import click
-from flask import Blueprint, request, abort, current_app, render_template, jsonify
-from flask_login import current_user
+from flask import Blueprint, request, abort, current_app, render_template, jsonify, redirect
+from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 from src.extensions import db, csrf
 from src.models.central import CentralTenant, CentralEventoRecebido
@@ -16,7 +16,33 @@ EVENTS = {'ASSINATURA_CRIADA', 'ASSINATURA_ATIVADA', 'ASSINATURA_SUSPENSA',
           'ASSINATURA_BLOQUEADA', 'ASSINATURA_REATIVADA', 'ASSINATURA_CANCELADA',
           'ASSINATURA_EXPIRADA', 'ASSINATURA_EXCLUIDA', 'LIMITE_ALTERADO',
           'COBRANCA_CRIADA', 'COBRANCA_PAGA', 'COBRANCA_ATRASADA',
-          'TRIAL_ALTERADO', 'CORTESIA_ALTERADA', 'CORTESIA_ENCERRADA'}
+          'TRIAL_ALTERADO', 'CORTESIA_ALTERADA', 'CORTESIA_ENCERRADA',
+          'CONTRATACAO_SOLICITADA', 'ASSINATURA_PAGO_AGUARDANDO_LIBERACAO'}
+
+
+@central_bp.get('/central/contratar')
+@login_required
+def contract():
+    import base64
+    from urllib.parse import urlencode
+    from src.services.central_client import validate_base_url
+    tenant = db.session.get(CentralTenant, current_user.empresa_id)
+    if not tenant or not current_app.config.get('CENTRAL_ENABLED'):
+        abort(503)
+    if current_user.perfil != 'admin':
+        abort(403)
+    secret = current_app.config.get('CENTRAL_WEBHOOK_SECRET', '')
+    if len(secret) < 32:
+        abort(503)
+    data = {'produto': 'PROPOSTAS', 'cliente_id': tenant.central_cliente_id,
+            'iat': int(time.time())}
+    encoded = base64.urlsafe_b64encode(json.dumps(data, separators=(',', ':')).encode()).decode().rstrip('=')
+    signature = hmac.new(secret.encode(), ('checkout-propostas:' + encoded).encode(), hashlib.sha256).hexdigest()
+    base = validate_base_url(current_app.config['CENTRAL_BASE_URL'])
+    response = redirect(base + '/contratar/propostas?' + urlencode({'token': encoded + '.' + signature}))
+    response.headers['Cache-Control'] = 'no-store'
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    return response
 
 
 def authenticate(raw, enrollment=False):
@@ -195,9 +221,9 @@ def register_central(app):
         if request.accept_mimetypes.best == 'application/json':
             response = jsonify(error='acesso_comercial_indisponivel', message=error.description)
         else:
-            from src.services.commercial_usage import checkout_url
+            from src.services.commercial_usage import checkout_url_for_company
             response = current_app.make_response(render_template('central/access_unavailable.html',
-                checkout=checkout_url() if error.description in (
+                checkout=checkout_url_for_company(current_user.empresa_id) if current_user.is_authenticated and error.description in (
                     'Você atingiu o limite de 10 propostas do período de teste. Contrate o LiveSun Propostas para continuar criando propostas.',
                     'Seu período de teste expirou. Contrate o LiveSun Propostas para continuar criando e enviando propostas.') else None,
                 access_restricted=True, temporary=error.code == 503, message=error.description))
@@ -228,7 +254,7 @@ def register_central(app):
     def central_guard():
         if (current_user.is_authenticated
                 and request.endpoint not in ('static', 'healthz', 'suporte', 'auth.login', 'central.webhook', 'central.state',
-                    'central.companies', 'central.company_detail', 'central.link_company')
+                    'central.companies', 'central.company_detail', 'central.link_company', 'central.contract')
                 and not (request.endpoint or '').endswith('.logout')):
             from src.services.commercial_usage import authorize
             authorize(current_user.empresa_id, request.endpoint, request.method)

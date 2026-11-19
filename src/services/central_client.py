@@ -20,7 +20,7 @@ class CommercialAccessError(HTTPException):
         self.code = code
 
 logger = logging.getLogger(__name__)
-STATUSES = {'TRIAL', 'ATIVA', 'SUSPENSA', 'BLOQUEADA', 'CANCELADA', 'EXPIRADA', 'EXCLUIDA'}
+STATUSES = {'TRIAL', 'ATIVA', 'PAGO_AGUARDANDO_LIBERACAO', 'SUSPENSA', 'BLOQUEADA', 'CANCELADA', 'EXPIRADA', 'EXCLUIDA'}
 
 
 def utcnow():

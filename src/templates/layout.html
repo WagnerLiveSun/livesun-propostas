@@ -127,6 +127,7 @@
         <a class="brand" href="{{ url_for('dashboard.index') }}" aria-label="LiveSun Propostas — início"><img class="developer-logo" src="{{ developer_logo_url }}" alt="LiveSun Tecnologia" width="389" height="200"><small>PROPOSTAS</small></a>
         <div class="topbar-actions">
         {% if current_user.is_authenticated %}
+            {% if current_user.perfil == 'admin' %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('central.contract') }}">Contratar agora / situação financeira</a>{% endif %}
             <form class="topbar-logout" method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-secondary">Sair</button></form>
         {% endif %}
             <button type="button" id="theme-toggle" class="btn btn-sm btn-outline-secondary">Alternar tema</button>
