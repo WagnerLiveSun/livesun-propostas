@@ -157,8 +157,14 @@ def install_provisioning_guard(app):
         if not current_user.is_authenticated or request.endpoint in exempt or request.endpoint == 'auth.logout':
             return
         row = registration_for_company(current_user.empresa_id)
-        if row is None or not pending_provisioning(row.empresa_id):
+        if not pending_provisioning(current_user.empresa_id):
             return
+        if row is None:
+            from src.services.commercial_usage import bypass
+            if bypass():
+                return
+            from src.services.central_client import CommercialAccessError
+            raise CommercialAccessError('O vínculo e a autorização da empresa precisam ser conferidos pela LiveSun.', 503)
         if row.status != 'PRONTO_ANALISE':
             logout_user()
             return redirect(url_for('auth.login'))

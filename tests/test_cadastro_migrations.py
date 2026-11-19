@@ -72,6 +72,7 @@ def test_reviewed_migration_normalizes_and_matches_models(database, monkeypatch,
     monkeypatch.setenv('REGISTRATION_UNIQUENESS_APPROVED', 'true')
     apply('d20261118b')
     apply('e20261118a')
+    apply('f20261118a')
     migrate(database, tmp_path / 'snapshots')
     with db.engine.connect() as conn:
         assert conn.execute(text('SELECT email_normalizado FROM usuarios')).scalar_one() == 'test@example.com'

@@ -18,6 +18,10 @@ auth_bp = Blueprint('auth', __name__)
 def login():
     """Página de login do usuário."""
     if current_user.is_authenticated:
+        from src.services.commercial_usage import authorize
+        commercial = authorize(current_user.empresa_id, login=True)
+        if commercial['restricted']:
+            return redirect(url_for('propostas.index'))
         return redirect(url_for('dashboard.index'))
 
     if request.method == 'POST':
@@ -42,12 +46,11 @@ def login():
                     return redirect(url_for('cadastro.recebido'))
                 flash('Seu cadastro ainda não foi concluído. Confirme seu e-mail e conclua a definição de senha.', 'info')
                 return render_template('auth/login.html')
-            if current_app.config.get('CENTRAL_ENABLED'):
-                from src.services.central_client import check_subscription
-                check_subscription(user.empresa_id)
+            from src.services.commercial_usage import authorize
+            commercial = authorize(user.empresa_id, login=True)
             login_user(user, remember=remember)
             flash(f'Bem-vindo, {user.nome}!', 'success')
-            return redirect(url_for('dashboard.index'))
+            return redirect(url_for('propostas.index' if commercial['restricted'] else 'dashboard.index'))
         else:
             flash('Usuário ou senha inválidos.', 'danger')
 

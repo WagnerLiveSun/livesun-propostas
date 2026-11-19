@@ -1,0 +1,8 @@
+{% if commercial and welcome_visible %}<section class="card welcome-panel no-print" aria-labelledby="welcome-title">
+<div class="page-heading"><div><h2 id="welcome-title">Bem-vindo, {{ current_user.empresa.nome }}</h2><p>Vamos preparar sua primeira proposta.</p></div>
+<form method="post" action="{{ url_for('dashboard.hide_welcome') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-secondary">Ocultar boas-vindas</button></form></div>
+<p>Plano: <strong>PROPOSTAS</strong> · Status: <strong>{{ commercial.status }}</strong>
+{% if commercial.status == 'TRIAL' and commercial.usage %} · Teste até {{ commercial.usage.trial_ate.strftime('%d/%m/%Y') }} · {{ commercial.used }} de 10 propostas criadas{% else %} · {{ commercial.total_created|default(0) }} propostas criadas{% endif %}</p>
+<div class="welcome-actions">{% if current_user.perfil == 'admin' %}<a href="{{ url_for('gestao.empresa') }}">1. Confirme os dados da empresa</a>{% else %}<span>1. Peça ao administrador para confirmar os dados da empresa</span>{% endif %}
+{% if current_user.perfil != 'visualizador' %}<a href="{{ url_for('gestao.item_form') }}">2. Cadastre seu primeiro produto ou serviço</a>{% if commercial.can_create %}<a href="{{ url_for('propostas.nova') }}">3. Crie sua primeira proposta</a>{% else %}<span>3. Criação indisponível no período de teste</span>{% endif %}{% else %}<span>2. Consulte os produtos e serviços com sua equipe</span><span>3. Peça à equipe para criar a primeira proposta</span>{% endif %}</div>
+</section>{% endif %}

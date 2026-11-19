@@ -153,6 +153,7 @@
     {% if current_user.is_authenticated and not access_restricted and legal_name_pending %}
     <div class="container-fluid px-lg-5 mt-3 no-print"><div class="alert alert-warning" role="status">Complete a razão social da sua empresa.{% if current_user.perfil == 'admin' %} <a href="{{ url_for('gestao.empresa') }}">Revisar dados da empresa</a>.{% else %} Peça ao administrador para revisar os dados da empresa.{% endif %}</div></div>
     {% endif %}
+    {% if commercial %}{% include 'partials/estado_comercial.html' %}{% endif %}
     {% block content %}{% endblock %}
     <footer class="no-print"><img class="footer-logo" src="{{ developer_logo_url }}" alt="LiveSun Tecnologia" width="389" height="200"><div>© 2026 LiveSun · Propostas Comerciais · Todos os direitos reservados.</div><div>Suporte: <a href="mailto:suporte@livesun.com.br">suporte@livesun.com.br</a></div></footer>
     </div>

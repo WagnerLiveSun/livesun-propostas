@@ -17,6 +17,7 @@
             </div>
             <p class="text-muted mt-4">Esta restrição não exclui suas propostas ou os dados da empresa.</p>
             <div class="actions mt-4 justify-content-center">
+                {% if checkout and not temporary %}<a class="btn btn-primary" href="{{ checkout }}" target="_blank" rel="noopener noreferrer">Contratar agora</a>{% endif %}
                 <a class="btn btn-primary" href="{{ url_for('dashboard.index') }}">Verificar acesso novamente</a>
                 {% if current_user.is_authenticated %}
                 <form method="post" action="{{ url_for('auth.logout') }}">

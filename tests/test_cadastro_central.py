@@ -245,7 +245,9 @@ def test_callback_unchanged_idempotent_and_existing_entitlements(app, mail):
     app.config['CENTRAL_ENABLED'] = True
     result = client.post('/auth/login', data=login_data)
     assert result.status_code == 302 and result.location.endswith('/')
-    response = client.get('/')
+    from src.services.central_client import CommercialAccessError
+    with patch('src.services.commercial_usage.details', side_effect=CommercialAccessError('Teste', 503)):
+        response = client.get('/')
     assert response.status_code == 200 and 'Complete a razão social' in response.text
     assert client.post('/empresa', data={'nome': 'Atividade Teste', 'razao_social': 'Empresa Real Ltda',
         'cnpj_cpf': '04252011000110', 'email': 'admin@example.com'}).status_code == 302
@@ -253,7 +255,8 @@ def test_callback_unchanged_idempotent_and_existing_entitlements(app, mail):
     tenant = CentralTenant.query.one()
     tenant.payload = {**tenant.payload, 'status': 'SUSPENSA', 'acesso_produto': False}
     db.session.commit()
-    assert client.get('/').status_code == 403
+    with patch('src.services.commercial_usage.details', side_effect=CommercialAccessError('Teste', 503)):
+        assert client.get('/').status_code == 403
 
 
 def test_callback_before_post_result_does_not_repeat_request(app, mail):
@@ -288,7 +291,7 @@ def test_transaction_failure_does_not_send_or_activate(app, mail):
     assert SolicitacaoCentral.query.count() == 0
 
 
-def test_legacy_company_login_unaffected(app):
+def test_old_company_now_requires_same_commercial_authorization(app):
     company = Empresa(nome='Legado')
     db.session.add(company)
     db.session.flush()
@@ -297,8 +300,8 @@ def test_legacy_company_login_unaffected(app):
     db.session.add(user)
     db.session.commit()
     client = app.test_client()
-    assert client.post('/auth/login', data={'usuario': 'legado', 'senha': 'senha-legada'}).status_code == 302
-    assert client.get('/empresa').status_code == 200
+    assert client.post('/auth/login', data={'usuario': 'legado', 'senha': 'senha-legada'}).status_code == 503
+    assert client.get('/empresa').status_code == 302
 
 
 def test_no_retry_button_without_failure_and_no_get_side_effect(app, mail):

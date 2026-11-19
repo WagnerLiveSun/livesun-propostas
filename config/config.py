@@ -86,6 +86,7 @@ class Config:
     TERMS_VERSION = os.getenv('TERMS_VERSION', '')
     PRIVACY_VERSION = os.getenv('PRIVACY_VERSION', '')
     CENTRAL_REGISTRATION_RETRY_SECONDS = int(os.getenv('CENTRAL_REGISTRATION_RETRY_SECONDS', '120'))
+    CENTRAL_CHECKOUT_URL = os.getenv('CENTRAL_CHECKOUT_URL', '')
 
 
 class DevelopmentConfig(Config):

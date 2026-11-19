@@ -116,14 +116,7 @@ def get_entitlements(empresa_id, sensitive=True):
         else:
             category = 'CONFIGURACAO_OU_RESPOSTA'
         logger.warning('Falha de comunicação com o Central. Categoria: %s', category)
-        tenant = db.session.get(CentralTenant, empresa_id)
-        if tenant and tenant.payload:
-            if not tenant.payload.get('acesso_produto') or tenant.payload.get('status') not in ('ATIVA', 'TRIAL'):
-                return tenant.payload
-            deadline = (tenant.valido_ate or utcnow()) + timedelta(minutes=current_app.config['CENTRAL_FAILSAFE_MINUTES'])
-            if (not sensitive and current_app.config.get('CENTRAL_ALLOW_FAIL_OPEN_NON_SENSITIVE')
-                    and utcnow() < deadline):
-                return tenant.payload
+        # Cache expirado não autoriza nem leitura restrita na política comercial.
         raise CommercialAccessError('Não foi possível consultar sua assinatura neste momento. Tente novamente em instantes ou fale com o suporte.', 503)
 
 

@@ -191,10 +191,15 @@ def register_central(app):
 
     @app.errorhandler(CommercialAccessError)
     def commercial_access_error(error):
+        db.session.rollback()
         if request.accept_mimetypes.best == 'application/json':
             response = jsonify(error='acesso_comercial_indisponivel', message=error.description)
         else:
+            from src.services.commercial_usage import checkout_url
             response = current_app.make_response(render_template('central/access_unavailable.html',
+                checkout=checkout_url() if error.description in (
+                    'Você atingiu o limite de 10 propostas do período de teste. Contrate o LiveSun Propostas para continuar criando propostas.',
+                    'Seu período de teste expirou. Contrate o LiveSun Propostas para continuar criando e enviando propostas.') else None,
                 access_restricted=True, temporary=error.code == 503, message=error.description))
         response.status_code = error.code
         response.headers['Cache-Control'] = 'no-store'
@@ -221,11 +226,12 @@ def register_central(app):
 
     @app.before_request
     def central_guard():
-        if (app.config['CENTRAL_ENABLED'] and current_user.is_authenticated
-                and request.endpoint not in ('static', 'healthz', 'suporte', 'central.webhook', 'central.state',
+        if (current_user.is_authenticated
+                and request.endpoint not in ('static', 'healthz', 'suporte', 'auth.login', 'central.webhook', 'central.state',
                     'central.companies', 'central.company_detail', 'central.link_company')
                 and not (request.endpoint or '').endswith('.logout')):
-            check_subscription(current_user.empresa_id)
+            from src.services.commercial_usage import authorize
+            authorize(current_user.empresa_id, request.endpoint, request.method)
 
     @app.cli.command('central-vincular')
     @click.argument('empresa_id', type=int)

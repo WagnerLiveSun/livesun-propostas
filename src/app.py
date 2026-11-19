@@ -160,6 +160,12 @@ def create_app(config_name=None, overrides=None):
                 'stylesheet_url': url_for('static', filename='css/style.css', v=css_version),
                 'legal_name_pending': legal_name_pending}
 
+    @app.context_processor
+    def commercial_context():
+        from flask import g
+        state = getattr(g, 'commercial_state', None)
+        return {'commercial': state, 'access_restricted': bool(state and state.get('restricted'))}
+
     @app.route('/suporte')
     def suporte():
         return render_template('suporte.html')

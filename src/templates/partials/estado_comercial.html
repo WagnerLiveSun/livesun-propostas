@@ -1,0 +1,5 @@
+{% if commercial.message or commercial.near %}<div class="commercial-notice no-print" role="status">
+<p>{{ commercial.message or 'Seu período de teste termina em breve. Conheça as condições para continuar usando o LiveSun Propostas.' }}</p>
+{% if commercial.restricted %}<a class="btn btn-outline-secondary" href="{{ url_for('propostas.index') }}">Consultar propostas</a>{% endif %}
+{% if commercial.checkout %}<a class="btn btn-primary" href="{{ commercial.checkout }}" target="_blank" rel="noopener noreferrer">Contratar agora</a>{% endif %}
+</div>{% endif %}

@@ -11,6 +11,7 @@ from src.app import create_app
 from src.extensions import db
 from src.models import Empresa, Usuario
 from src.models.central import CentralTenant, CentralEventoRecebido
+from src.services.central_client import CommercialAccessError
 
 
 class CentralIntegrationTests(unittest.TestCase):
@@ -21,6 +22,9 @@ class CentralIntegrationTests(unittest.TestCase):
             'CENTRAL_BASE_URL': 'https://central.example.com', 'CENTRAL_ALLOW_LOCAL_HTTP': False})
         self.context = self.app.app_context()
         self.context.push()
+        self.details_patch = patch('src.services.commercial_usage.details',
+            side_effect=CommercialAccessError('Detalhes indisponíveis no teste', 503))
+        self.details_patch.start()
         db.create_all()
         company = Empresa(nome='Teste')
         db.session.add(company)
@@ -41,6 +45,7 @@ class CentralIntegrationTests(unittest.TestCase):
         self.client = self.app.test_client()
 
     def tearDown(self):
+        self.details_patch.stop()
         db.session.remove()
         db.drop_all()
         self.context.pop()
@@ -119,7 +124,7 @@ class CentralIntegrationTests(unittest.TestCase):
         blocked = {**self.payload, 'status': 'SUSPENSA', 'acesso_produto': False, 'limites': {}, 'versao': 2}
         self.assertEqual(self.send(blocked).status_code, 200)
         self.assertEqual(self.client.get('/').status_code, 403)
-        self.assertEqual(self.login().status_code, 403)
+        self.assertEqual(self.login().status_code, 302)
         self.assertEqual(self.send({**self.payload, 'versao': 3}, event='evt_active').status_code, 200)
         self.assertEqual(self.client.get('/auth/perfil').status_code, 200)
 
@@ -175,12 +180,14 @@ class CentralIntegrationTests(unittest.TestCase):
         db.session.commit()
         self.assertEqual(self.login().status_code, 403)
 
-    def test_all_blocked_states_prevent_login(self):
+    def test_restricted_states_allow_read_login_excluded_denies(self):
         for version, status in enumerate(['SUSPENSA', 'BLOQUEADA', 'CANCELADA', 'EXPIRADA', 'EXCLUIDA'], start=2):
             with self.subTest(status=status):
                 blocked = {**self.payload, 'status': status, 'acesso_produto': False, 'limites': {}, 'versao': version}
                 self.assertEqual(self.send(blocked, event='evt_'+status).status_code, 200)
-                self.assertEqual(self.login().status_code, 403)
+                self.client.post('/auth/logout')
+                response = self.login()
+                self.assertEqual(response.status_code, 403 if status == 'EXCLUIDA' else 302)
 
     def test_blocked_access_uses_product_theme_and_support_contacts(self):
         self.assertEqual(self.login().status_code, 302)
@@ -258,6 +265,6 @@ class CentralIntegrationTests(unittest.TestCase):
         response.json.return_value = {**self.payload, 'versao': 2, 'status': 'SUSPENSA',
                                       'acesso_produto': False, 'limites': {}}
         with patch('requests.get', return_value=response) as get:
-            self.assertEqual(self.login().status_code, 403)
+            self.assertEqual(self.login().status_code, 302)
             self.assertTrue(get.call_args.args[0].startswith('http://127.0.0.1:5001/'))
         self.assertEqual(tenant.payload['status'], 'SUSPENSA')

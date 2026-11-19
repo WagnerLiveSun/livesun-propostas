@@ -41,9 +41,10 @@ def filtered_query():
 @propostas_bp.route('/')
 @login_required
 def index():
+    from flask import g
     page = filtered_query().order_by(Proposta.id.desc()).paginate(page=request.args.get('page', 1, type=int), per_page=25)
     return render_template('propostas/lista.html', page=page, statuses=STATUSES,
-                           clientes=Cliente.query.filter_by(empresa_id=current_user.empresa_id).order_by(Cliente.nome).all())
+                           clientes=[] if getattr(g, 'commercial_state', {}).get('restricted') else Cliente.query.filter_by(empresa_id=current_user.empresa_id).order_by(Cliente.nome).all())
 
 
 @propostas_bp.route('/nova', methods=['GET', 'POST'])
@@ -65,6 +66,9 @@ def edit_form(proposal, creating):
     if request.method == 'POST':
         try:
             fill_proposal(proposal, request.form)
+            if creating:
+                from src.services.commercial_usage import reserve_creation
+                reserve_creation(proposal)
             db.session.add(proposal)
             db.session.flush()
             audit('criar_proposta' if creating else 'editar_proposta', 'proposta', proposal.id)
@@ -121,6 +125,8 @@ def replicar(identifier):
     proposal.cliente_telefone = ''
     if proposal.validade and proposal.validade < proposal.data_emissao:
         proposal.validade = None
+    from src.services.commercial_usage import reserve_creation
+    reserve_creation(proposal)
     db.session.add(proposal)
     for item in original.itens.order_by(PropostaItem.sequencial):
         proposal.itens.append(PropostaItem(**{name: getattr(item, name) for name in
@@ -202,6 +208,15 @@ def prepare_and_send(proposal, identifier, company_id, user_id, delivery_id, rec
     # Não manter uma transação remota ociosa durante Chromium ou API externa.
     db.session.rollback()
     attachment = generate_pdf(pdf_html)
+    from src.services.commercial_usage import assert_send_authorized
+    from src.services.central_client import CommercialAccessError
+    try:
+        assert_send_authorized(company_id)
+    except CommercialAccessError:
+        # A tentativa já foi persistida, mas nenhum e-mail foi enviado.
+        db.session.rollback()
+        finish_delivery(delivery_id, company_id, user_id, False)
+        raise
     successful = brevo_service.send_transactional_email(recipient, customer_name, subject, email_html,
                     attachment={'name': f'proposta-{number}.pdf', 'content': attachment})
     saved = finish_delivery(delivery_id, company_id, user_id, successful)

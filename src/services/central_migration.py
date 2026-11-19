@@ -10,7 +10,7 @@ from sqlalchemy.schema import CreateTable
 
 BASE_REVISION = 'b8215bc35a91'
 TARGET_REVISION = 'c20261112'
-COMPATIBLE_REVISIONS = {TARGET_REVISION, 'd20261118a', 'd20261118b', 'e20261118a'}
+COMPATIBLE_REVISIONS = {TARGET_REVISION, 'd20261118a', 'd20261118b', 'e20261118a', 'f20261118a'}
 CENTRAL_TABLES = {'central_tenants', 'central_eventos_recebidos'}
 
 
