@@ -1,1 +1,13 @@
-{% extends 'layout.html' %}{% block content %}<main><h1>Suporte</h1><p>Procure o administrador da sua empresa para questões de acesso e configuração.</p><p>LiveSun - Propostas é um sistema independente do LiveSun Comercial.</p></main>{% endblock %}
+{% extends 'layout.html' %}
+{% block title %}Contato e suporte · LiveSun Propostas{% endblock %}
+{% block content %}
+<main>
+  <div class="page-heading"><div><h1>Contato / Suporte</h1><p class="text-muted">Escolha um canal para falar com a equipe LiveSun.</p></div></div>
+  <div class="row g-3">
+    <div class="col-md-4"><section class="card h-100"><div class="card-body p-4"><h2 class="h5">E-mail</h2><p class="text-muted">Contato direto com a equipe.</p><a href="mailto:suporte@livesun.com.br">suporte@livesun.com.br</a></div></section></div>
+    <div class="col-md-4"><section class="card h-100"><div class="card-body p-4"><h2 class="h5">WhatsApp</h2><p class="text-muted">Converse com a equipe LiveSun.</p><a href="https://wa.me/5521927891083" target="_blank" rel="noopener noreferrer">21 92789-1083 <span class="visually-hidden">(abre em nova aba)</span></a></div></section></div>
+    <div class="col-md-4"><section class="card h-100"><div class="card-body p-4"><h2 class="h5">Solicitação de suporte</h2><p class="text-muted">Registre o seu atendimento.</p><a class="btn btn-primary" href="https://app.pipefy.com/public/form/ETeM9Gbz" target="_blank" rel="noopener noreferrer">Abrir solicitação <span class="visually-hidden">(abre em nova aba)</span></a></div></section></div>
+  </div>
+  <section class="card mt-4"><div class="card-body p-4"><h2 class="h5">Como podemos ajudar?</h2><p class="mb-0 text-muted">Informe a tela, a ação realizada e a mensagem exibida. Se possível, inclua uma captura de tela e o horário do ocorrido. Não envie sua senha.</p></div></section>
+</main>
+{% endblock %}

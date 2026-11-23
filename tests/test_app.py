@@ -70,6 +70,23 @@ class AppTests(unittest.TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertNotIn(b'SEGREDO OUTRA EMPRESA', response.data)
 
+    def test_support_menu_and_channels_for_admin_and_viewer(self):
+        for user in ('admin', 'viewer'):
+            with self.subTest(user=user):
+                self.client.post('/auth/logout')
+                self.login(user)
+                page = self.client.get('/')
+                self.assertEqual(page.status_code, 200)
+                self.assertIn('href="/suporte"'.encode(), page.data)
+                self.assertIn('Contato / Suporte'.encode(), page.data)
+                response = self.client.get('/suporte')
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('aria-current="page"'.encode(), response.data)
+                self.assertIn('mailto:suporte@livesun.com.br'.encode(), response.data)
+                self.assertIn('https://wa.me/5521927891083'.encode(), response.data)
+                self.assertIn('https://app.pipefy.com/public/form/ETeM9Gbz'.encode(), response.data)
+                self.assertNotIn('SEGREDO OUTRA EMPRESA'.encode(), response.data)
+
     def test_health_check(self):
         from sqlalchemy.exc import OperationalError
         self.client.post('/auth/logout')

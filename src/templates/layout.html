@@ -141,7 +141,7 @@
             {% set section = request.endpoint or '' %}
             {% set links = [('dashboard.index', 'Dashboard', section == 'dashboard.index'), ('propostas.index', 'Propostas', section.startswith('propostas.')), ('gestao.clientes', 'Clientes', section in ['gestao.clientes', 'gestao.cliente_form']), ('gestao.itens', 'Produtos / serviços', section in ['gestao.itens', 'gestao.item_form'])] %}
             {% if current_user.perfil == 'admin' %}{% set links = links + [('gestao.empresa', 'Empresa', section == 'gestao.empresa'), ('gestao.usuarios', 'Usuários', section == 'gestao.usuarios')] %}{% endif %}
-            {% set links = links + [('auth.perfil', 'Meu perfil', section == 'auth.perfil')] %}
+            {% set links = links + [('auth.perfil', 'Meu perfil', section == 'auth.perfil'), ('suporte', 'Contato / Suporte', section == 'suporte')] %}
             {% for endpoint, label, active in links %}
             <a href="{{ url_for(endpoint) }}" class="sidebar-link{{ ' active' if active else '' }}"{% if active %} aria-current="page"{% endif %}>{{ label }}</a>
             {% endfor %}
